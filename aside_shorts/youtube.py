@@ -61,7 +61,9 @@ SEL: Dict[str, Any] = {
     "c_submit": "#submit-button",
     "c_thread": "ytd-comment-thread-renderer",
     "c_menu": "#action-menu-button",
-    "uploaded": re.compile(r"(업로드 완료|Upload complete|확인 완료|Checks complete|처리|Processing|SD|HD|저작권|Copyright)", re.I),
+    # 2026-10-05 실측: 「검사가 완료되었습니다. 발견된 문제가 없습니다.」 — 이 문구를 몰라 「예약」 앞에서 멈췄다
+    "uploaded": re.compile(r"(업로드 완료|Upload complete|확인 완료|검사가 완료|검사 완료|문제가 없습니다|Checks complete|"
+                           r"No issues|처리|Processing|SD|HD|저작권|Copyright)", re.I),
 }
 SESSION_COOKIES = ("SAPISID", "__Secure-3PAPISID", "LOGIN_INFO")
 
@@ -402,7 +404,7 @@ def _wait_uploaded(s: Session, limit: int = 1800) -> None:
     """파일 전송이 끝날 때까지 — 끝나기 전에 창을 떠나면 업로드가 끊긴다."""
     page = s.page
     t0 = time.time()
-    last = ""
+    last, since = "", time.time()
     while time.time() - t0 < limit:
         try:
             txt = page.locator(SEL["progress"]).first.inner_text(timeout=3_000).strip()
@@ -410,9 +412,19 @@ def _wait_uploaded(s: Session, limit: int = 1800) -> None:
             txt = ""
         if txt != last:
             detail(f"  진행: {txt[:80]}")
-            last = txt
-        if txt and not re.search(r"(업로드 중|Uploading|\d+\s*%)", txt) and SEL["uploaded"].search(txt):
+            last, since = txt, time.time()
+        uploading = bool(re.search(r"(업로드 중|Uploading|\d+\s*%)", txt))
+        if txt and not uploading and SEL["uploaded"].search(txt):
             return
+        # 처음 보는 완료 문구여도: 전송(%)이 끝난 채 30초 넘게 그대로이고 예약/게시 버튼이 눌릴 수 있으면 끝난 것
+        if txt and not uploading and time.time() - since > 30:
+            try:
+                btn = page.locator(SEL["done"]).first
+                if btn.is_enabled() and btn.get_attribute("aria-disabled") != "true":
+                    detail(f"  완료로 간주(문구 미등록): {txt[:80]}")
+                    return
+            except Exception:
+                pass
         if not txt and time.time() - t0 > 20 and not _dialog_alive(page):
             s.shot("dialog-gone")
             raise PostError("업로드 창이 중간에 닫혔어요 — 영상은 Studio 「콘텐츠」에 비공개 초안으로 남아 있을 수 있어요. "
