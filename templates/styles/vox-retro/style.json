@@ -1,0 +1,10 @@
+{
+  "name": "vox-retro",
+  "label": "Vox 레트로 (크림 종이 · 노란 하이라이트 · 도해)",
+  "image": {
+    "sticker": "vintage black-and-white halftone print photograph, subtle newspaper dot texture, high contrast, slightly desaturated, realistic object",
+    "background": "muted vintage photograph on aged cream paper, soft film grain, gentle sepia tones, documentary feel",
+    "diagram": "vintage technical blueprint drawing, fine navy ink line art on off-white drafting paper with faint grid, patent-illustration style"
+  },
+  "svg": "레트로 인쇄물 일러스트. 팔레트: 크림 #efe7d6 · 잉크 #161411 · 회색 #8a8275 · 노랑 #f7c600 · 빨강 #d8322a · 남색 #1f3d73. 스티커는 흑백/회색 위주에 포인트 한 색, 하프톤 점 pattern 으로 명암, 굵은 잉크 외곽선. 도해는 남색 선의 청사진(옅은 격자 위). 배경은 빛바랜 세피아 톤."
+}

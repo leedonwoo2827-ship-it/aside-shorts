@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aside-shorts 대시보드</title>
+<style>
+:root{--bg:#F6F1E8;--card:#fff;--ink:#1d2433;--sub:#64748b;--line:#e5ded2;--pri:#1F4E79;--pri2:#9DC3E6;--ok:#0f766e;--warn:#b45309;--bad:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;font-size:14px}
+header{display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--pri);color:#fff;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header b.brand{font-size:17px;letter-spacing:-.02em}
+header select{background:#fff;color:var(--ink);min-width:220px}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tabs button{border:none;background:transparent;color:#dbe7f3;font:inherit;font-weight:700;padding:7px 13px;border-radius:8px;cursor:pointer}
+.tabs button.on{background:#fff;color:var(--pri)}
+.who{font-size:12.5px;display:flex;gap:10px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;background:#94a3b8;display:inline-block;margin-right:4px}
+.dot.on{background:#4ade80}.dot.off{background:#f87171}
+main{padding:18px 20px calc(var(--logh,170px) + 30px);max-width:1500px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+h2{font-size:15px;margin:0 0 10px;color:var(--pri)}
+.mini{font-size:12px;color:var(--sub);font-weight:500}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button.b,a.b,label.b{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 11px;cursor:pointer;font:inherit;font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap;display:inline-block}
+button.b:hover,a.b:hover,label.b:hover{border-color:var(--pri2)}
+button.p{background:var(--pri);color:#fff;border-color:var(--pri)}
+button.h{background:#E4572E;color:#fff;border-color:#E4572E}
+button.s{padding:3px 8px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:#fff;color:var(--ink)}
+textarea{width:100%;resize:vertical;line-height:1.5}
+label.opt{display:flex;gap:5px;align-items:center;color:var(--sub)}
+.stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.stage{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fffdf9;display:flex;flex-direction:column}
+.stage.run{border-color:#f59e0b;box-shadow:0 0 0 2px #fde68a}
+.stage .t{font-weight:800}.stage .t small{color:var(--sub);font-weight:600;margin-left:4px}
+.stage p{margin:6px 0 8px;color:var(--sub);font-size:12.5px;line-height:1.45;flex:1}
+table{width:100%;border-collapse:collapse}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--sub);font-weight:700;background:#faf7f1}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#fffcf6}
+.ok{color:var(--ok);font-weight:700}.no{color:#cbd5e1}.warn{color:var(--warn);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px;background:#EEE7DA}
+.tag.ready{background:#DDEBF7;color:var(--pri)}.tag.scheduled{background:#FFF1D6;color:var(--warn)}
+.tag.posted{background:#DDF1E6;color:var(--ok)}.tag.error{background:#FBE3DC;color:var(--bad)}.tag.motion{background:#EDE4FA;color:#6B3FA0}
+.thumb{width:36px;height:64px;border-radius:5px;background:#EEE7DA center/cover no-repeat}
+.hide{display:none!important}
+.grid-view{display:grid;grid-template-columns:260px minmax(300px,420px) 1fr;gap:14px;align-items:start}
+.list .it{padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.list .it:hover{background:#faf7f1}.list .it.on{background:#eef4fa;border-color:var(--pri2)}
+.list .it b{display:block}.list .it span{color:var(--sub);font-size:12.5px}
+video.v{width:100%;aspect-ratio:9/16;background:#000;border-radius:12px;display:block}
+iframe.m{width:100%;aspect-ratio:9/16;border:none;border-radius:12px;background:#000}
+.imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.im .ph{aspect-ratio:1;border-radius:8px;border:1px solid var(--line);background:#cfc8b8 center/contain no-repeat}
+.im .ph.bg{aspect-ratio:2/3;background-size:cover}
+.im .note{font-size:12px;color:var(--sub);margin:4px 0}
+label.f{display:block;font-size:12px;font-weight:700;color:var(--pri);margin:10px 0 4px}
+.count{float:right;font-weight:600;color:var(--sub)}.count.over{color:var(--bad)}
+.ln{border-left:3px solid var(--line);padding-left:10px;margin-top:10px}
+.ln .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+details{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:10px;background:#fffdf9}
+summary{cursor:pointer;font-weight:700;color:var(--pri)}
+.drop{border:2px dashed var(--pri2);border-radius:12px;padding:22px;text-align:center;color:var(--sub);background:#f8fbff}
+.drop.over{background:#e6f0fa}
+.form{display:grid;grid-template-columns:180px 1fr;gap:8px 14px;align-items:center;max-width:900px}
+.form label{color:var(--sub);font-weight:600}
+#logbox{position:fixed;left:0;right:0;bottom:0;height:var(--logh,170px);background:#1E293B;color:#E2E8F0;
+  font:12.5px/1.45 Consolas,"D2Coding",monospace;display:flex;flex-direction:column;z-index:20;box-shadow:0 -6px 18px rgba(30,41,59,.18)}
+#grip{height:12px;flex:none;cursor:ns-resize;display:flex;align-items:center;justify-content:center;background:#16202F}
+#grip::before{content:"";width:46px;height:4px;border-radius:2px;background:#475569}
+#logbox .hd{flex:none;display:flex;justify-content:space-between;align-items:center;color:#94A3B8;padding:4px 14px;gap:8px}
+#logst.run{color:#FBBF24}#logst.ok{color:#4ADE80}#logst.bad{color:#F87171}
+#log{flex:1;overflow:auto;white-space:pre-wrap;padding:0 14px 8px}
+#logbox button{background:#334155;border:1px solid #475569;color:#fff;border-radius:6px;padding:1px 9px;font-size:11.5px;cursor:pointer}
+#loginBar{position:fixed;right:20px;bottom:calc(var(--logh,170px) + 12px);z-index:30;background:#FFF7E0;border:1px solid #F2D27A;border-radius:12px;padding:10px 14px;box-shadow:0 6px 18px rgba(30,41,59,.18)}
+.empty{padding:28px 10px;text-align:center;color:var(--sub);border:1px dashed var(--line);border-radius:12px}
+code{background:#f1ede4;border-radius:4px;padding:1px 5px}
+</style>
+</head>
+<body>
+<header>
+  <b class="brand">aside · Shorts</b>
+  <select id="job" title="작업(원고 묶음)"></select>
+  <span class="who"><span><span class="dot" id="cldot"></span><span id="cltxt">Claude …</span></span>
+    <span><span class="dot" id="ttdot"></span><span id="tttxt">SuperTonic3 …</span></span></span>
+  <nav class="tabs">
+    <button data-tab="dash" class="on">대시보드</button>
+    <button data-tab="view">결과 보기</button>
+    <button data-tab="newjob">새 작업·원고</button>
+    <button data-tab="goal">설정</button>
+    <button data-tab="acct">계정·올리기</button>
+  </nav>
+</header>
+
+<main>
+<!-- ── 대시보드 ── -->
+<section id="tab-dash">
+  <div class="card">
+    <h2>실행 옵션 <span class="mini">— 아래 단계 버튼에 같이 적용됩니다</span></h2>
+    <div class="row">
+      <label class="opt">쇼츠 <input id="o-only" placeholder="비우면 전체 · 예: 1-2-04,1-2-01" size="26"></label>
+      <label class="opt"><input id="o-force" type="checkbox"> 다시 만들기(--force)</label>
+      <label class="opt" title="그림 단계: 쇼츠 한 편의 그림만 먼저 그려 톤 확인"><input id="o-limit" type="checkbox"> 그림은 한 편만</label>
+      <span class="mini" id="o-info"></span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>단계 — 하나씩 점검하며 실행</h2>
+    <div class="stages" id="stages"></div>
+  </div>
+  <div class="card">
+    <h2>쇼츠별 진행 <span class="mini" id="sum"></span></h2>
+    <table><thead><tr>
+      <th></th><th>쇼츠</th><th>관점 · 후크</th><th class="num">문장</th><th class="num">길이</th><th>목소리</th><th>그림</th><th>모션</th><th>영상</th><th>상태</th><th>이 쇼츠만</th>
+    </tr></thead><tbody id="rows"></tbody></table>
+  </div>
+</section>
+
+<!-- ── 결과 보기 ── -->
+<section id="tab-view" class="hide">
+  <div class="grid-view">
+    <div class="card list" id="v-list"></div>
+    <div class="card" id="v-media"></div>
+    <div class="card" id="v-edit"></div>
+  </div>
+</section>
+
+<!-- ── 새 작업·원고 ── -->
+<section id="tab-newjob" class="hide">
+  <div class="card">
+    <h2>① 새 작업 만들기 <span class="mini">— 원고 폴더(260711 형식이면 각 절의 02_ 만)나 파일을 고르면 작업 폴더로 복사해 옵니다(원본은 그대로)</span></h2>
+    <div class="form">
+      <label>원고</label>
+      <div class="row"><button class="b" id="pickFolder">📁 폴더 지정하기</button><button class="b" id="pickFiles">📄 파일 선택하기</button>
+        <span class="mini" id="pickInfo">아직 고르지 않았어요.</span></div>
+      <label>작업 이름 (영문)</label><input id="nj-name" placeholder="예: tonghap1" style="max-width:280px">
+      <label>시리즈 이름</label><input id="nj-title" placeholder="예: 고등학교 통합사회1" style="max-width:420px">
+      <label>모션 스타일</label><select id="nj-style" style="max-width:420px"></select>
+      <label>목소리</label><select id="nj-voice" style="max-width:120px"></select>
+      <label>원고 종류</label><label class="opt" style="color:var(--ink)"><input type="checkbox" id="nj-rw"> 이미 안전 개작본이에요(02_rewrite 로) — 체크 안 하면 원본(01_raw)으로 넣고 「0 안전 개작」</label>
+      <span></span><div><button class="b p" id="nj-ok" disabled>작업 만들기</button> <span class="mini">260711 형식 폴더는 01_raw → 원본, 02_ → 개작본으로 자동으로 나눠요</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>② 지금 작업의 원고 <span class="mini" id="docs-job"></span></h2>
+    <div id="docs"></div>
+    <div class="drop" id="drop" style="margin-top:10px">여기에 원고(.docx)를 끌어다 놓으면 이 작업에 추가됩니다 · 또는 <label class="b" style="display:inline-block"><input type="file" id="dropInput" accept=".docx,.txt,.md" multiple hidden>파일 고르기</label>
+      <div style="margin-top:8px"><label class="opt" style="justify-content:center"><input type="checkbox" id="drop-rw"> 넣는 파일이 이미 안전 개작본(02_rewrite 로)</label></div></div>
+    <p class="mini">원고 이름이 <code>N장_제목-M절_제목.docx</code> 꼴이면 단원 폴더 <code>N-M_제목</code> 이 생기고 쇼츠 번호가 <code>N-M-01</code>… 로 붙어요.
+      원본을 넣었으면 대시보드에서 「0 안전 개작」 → 여기서 「비교」로 확인 → 「1 대본」.</p>
+    <details><summary>폴더 구조</summary><pre class="mini" style="margin:8px 0">jobs/&lt;작업&gt;/
+  job.json · state.json
+  1-2_통합적 관점의 필요성과 적용/     ← 단원(절) 하나
+    01_raw/      원본 docx (보관만, 절대 안 고침)
+    02_rewrite/  안전 개작 docx + 검증.json        ← 0 안전 개작
+    03_script/   1-2-01.json … (관점별 대본) · *.edit.json(사람 수정)   ← 1 대본
+    04_bundle/
+      1-2-01/    audio/ (2) · images/ (3) · motion/ (4) · out/1-2-01.mp4 (5)</pre></details>
+  </div>
+</section>
+
+<!-- ── 설정 ── -->
+<section id="tab-goal" class="hide">
+  <div class="card">
+    <h2>이 작업 (job.json) <span class="mini" id="g-job"></span></h2>
+    <div class="form">
+      <label>시리즈 이름</label><input id="g-title" style="max-width:420px">
+      <label>모션 스타일</label><select id="g-style" style="max-width:420px"></select>
+      <label>목소리</label><select id="g-voice" style="max-width:120px"></select>
+      <label>말 빠르기</label><input id="g-speed" type="number" step="0.05" min="0.7" max="1.6" style="max-width:120px">
+      <span></span><div><button class="b p" id="g-save">이 작업 설정 저장</button> <span class="mini">비워 두면 아래 전체 설정을 따릅니다. 목소리·빠르기를 바꾸면 「2 목소리」부터 다시.</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>이 PC 전체 설정 <span class="mini">— aside.config.local.json 에 저장(회사 PC·집 PC 따로)</span></h2>
+    <div class="form" id="s-form"></div>
+    <div style="margin-top:12px"><button class="b p" id="s-save">전체 설정 저장</button> <span class="mini" id="s-msg"></span></div>
+  </div>
+</section>
+
+<!-- ── 계정·올리기 ── -->
+<section id="tab-acct" class="hide">
+  <div class="card">
+    <h2>Claude <span class="mini">— 대본 · 그림(SVG) · 모션. 구독 계정 OAuth 로그인(API 키 불필요)</span></h2>
+    <div class="row"><span id="a-claude">확인 중…</span><button class="b" id="a-claude-btn">Claude 로그인</button></div>
+  </div>
+  <div class="card">
+    <h2>SuperTonic3 <span class="mini">— 목소리 (영상공방 VoiceWright)</span></h2>
+    <div class="row"><span id="a-tts">확인 중…</span><button class="b" id="a-tts-set">폴더 바꾸기 → 설정 탭</button></div>
+  </div>
+  <div class="card">
+    <h2>YouTube <span class="mini">— 채널마다 전용 Chrome 프로필. 처음 한 번 Google 로그인·채널 선택</span></h2>
+    <table><thead><tr><th>기본</th><th>이름</th><th>표시</th><th>로그인</th><th></th></tr></thead><tbody id="a-yt"></tbody></table>
+    <div class="row" style="margin-top:10px"><input id="acc-name" placeholder="이름(영문) 예: dekman" size="18"><input id="acc-label" placeholder="표시 예: @dekmanfactory" size="22"><button class="b" id="acc-add">＋ 계정 추가</button></div>
+    <div class="row" style="margin-top:12px">
+      <button class="b p" id="a-panel" title="오른쪽에 업로드 패널, 왼쪽에 YouTube Studio Chrome">🚀 업로드 패널 열기</button>
+      <span class="mini">올리기는 업로드 패널에서: 쇼츠 → 미리 채워 보기 → 지금 올리기/예약. 왼쪽 Studio 창에서 진행이 보여요.</span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>예약·올린 기록</h2>
+    <div id="a-sched"></div>
+  </div>
+  <div class="card">
+    <h2>관리</h2>
+    <div class="row"><button class="b" id="a-doc">점검하기</button><button class="b" id="a-assets">글꼴·GSAP 받기</button>
+      <button class="b" id="a-probe" title="담당자용 — Studio 업로드 창 구조 기록">업로드 창 기록(담당자용)</button>
+      <button class="b" id="a-del" style="color:var(--bad)">이 작업 지우기</button>
+      <button class="b h" id="a-quit">프로그램 끄기</button></div>
+  </div>
+</section>
+</main>
+
+<dialog id="cmp" style="width:min(1300px,96vw);max-height:90vh;border:none;border-radius:14px;padding:16px">
+  <div style="text-align:right"><button class="b s" onclick="document.getElementById('cmp').close()">닫기</button></div><div id="cmpBody"></div></dialog>
+<div id="loginBar" class="hide"><b style="color:#7A5300">브라우저가 안 열렸나요?</b>
+  <a id="loginLink" target="_blank" rel="noopener" class="b" style="margin-left:8px">🔑 로그인 페이지 열기</a>
+  <button class="b s" id="loginClose">닫기</button></div>
+<div id="logbox"><div id="grip" title="끌어서 높이 조절 · 더블클릭: 크게/작게"></div>
+  <div class="hd"><span id="logst">대기 중</span><span><button id="btnStop">중지</button> <button id="btnClr">지우기</button></span></div>
+  <div id="log"></div></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (path, opt = {}) => {
+  const r = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opt, body: opt.body ? JSON.stringify(opt.body) : undefined});
+  if (!r.ok) { const t = await r.text(); let m = t; try { m = JSON.parse(t).detail } catch {} ; alert(m); throw new Error(m) }
+  return r.json();
+};
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LS = { get(k, d) { try { return localStorage.getItem(k) ?? d } catch { return d } }, set(k, v) { try { localStorage.setItem(k, v) } catch {} } };
+const STATUS = {script: "대본", motion: "모션", ready: "영상 준비", scheduled: "예약", posted: "올림", error: "오류"};
+let S = {tab: LS.get("tab", "dash"), job: LS.get("job", ""), sel: null, state: null, rows: null};
+
+// ── 공통: 상태 ──
+async function loadState() {
+  S.state = await api("/api/state");
+  const st = S.state;
+  if (!st.jobs.find(j => j.name === S.job)) S.job = st.jobs[0]?.name || "";
+  $("#job").innerHTML = st.jobs.length ? st.jobs.map(j => `<option value="${esc(j.name)}" ${j.name === S.job ? "selected" : ""}>${esc(j.title)} (${esc(j.name)})</option>`).join("")
+    : `<option value="">작업 없음 — 「새 작업·원고」 탭</option>`;
+  const so = st.styles.map(x => `<option value="${esc(x.name)}">${esc(x.label)}</option>`).join("");
+  const vo = st.voices.map(x => `<option>${x}</option>`).join("");
+  $("#nj-style").innerHTML = so; $("#nj-voice").innerHTML = vo; $("#nj-voice").value = "F4";
+  $("#g-style").innerHTML = `<option value="">(전체 설정 따름)</option>` + so; $("#g-voice").innerHTML = `<option value="">(전체 설정 따름)</option>` + vo;
+}
+async function checkTools() {
+  const c = await api("/api/claude").catch(() => null);
+  if (c) { $("#cldot").className = "dot " + (c.logged_in ? "on" : "off");
+    $("#cltxt").textContent = !c.installed ? "Claude 없음" : c.logged_in ? `Claude · ${c.email}${c.plan ? " · " + c.plan : ""}` : "Claude 로그인 필요";
+    $("#a-claude").innerHTML = !c.installed ? `<span class="bad">claude 명령이 없어요 — npm i -g @anthropic-ai/claude-code</span>`
+      : c.logged_in ? `<span class="ok">✓ 로그인됨</span> ${esc(c.email)} · ${esc(c.plan)} · ${esc(c.method)}` : `<span class="bad">✗ 로그인이 필요해요</span>`;
+    $("#a-claude-btn").textContent = c.logged_in ? "다른 계정으로" : "Claude 로그인"; $("#a-claude-btn").className = "b" + (c.logged_in ? "" : " p"); }
+  const t = await api("/api/tools").catch(() => null);
+  if (t) { $("#ttdot").className = "dot " + (t.tts ? "on" : "off"); $("#tttxt").textContent = t.tts ? "SuperTonic3" : "SuperTonic3 없음";
+    $("#a-tts").innerHTML = t.tts ? `<span class="ok">✓ 확인</span> <code>${esc(t.tts_dir)}</code>` : `<span class="bad">✗ 찾지 못함</span> <code>${esc(t.tts_dir)}</code>`; }
+}
+
+// ── 실행 · 로그 ──
+let logNext = 0, wasBusy = false;
+async function run(args, msg) {
+  if (msg && !confirm(msg)) return;
+  await api("/api/run", {method: "POST", body: {args}}); pollLog();
+}
+async function pollLog() {
+  const r = await api(`/api/log?since=${logNext}`).catch(() => null);
+  if (!r) return;
+  logNext = r.next;
+  if (r.lines.length) {
+    r.lines = r.lines.filter(l => { const m = l.match(/LOGIN_URL (https:\/\/\S+)/); if (!m) return true;
+      $("#loginLink").href = m[1]; $("#loginBar").classList.remove("hide"); return false; });
+    const el = $("#log"); const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    el.textContent += r.lines.join("\n") + "\n"; if (atBottom) el.scrollTop = el.scrollHeight;
+  }
+  const st = $("#logst");
+  st.textContent = r.busy ? `⏳ ${r.label} 하는 중…` : r.code == null ? "대기 중" : r.code === 0 ? "✓ 다 됐어요" : r.code === -1 ? "■ 멈춤" : "✗ 중간에 멈췄어요";
+  st.className = r.busy ? "run" : r.code === 0 ? "ok" : r.code > 0 ? "bad" : "";
+  document.querySelectorAll(".stage").forEach(c => c.classList.toggle("run", r.busy && r.cmd[0] === c.dataset.cmd));
+  if (wasBusy && !r.busy) { refresh(); checkTools(); $("#loginBar").classList.add("hide") }
+  wasBusy = r.busy;
+}
+setInterval(pollLog, 1000);
+const setLogH = h => { h = Math.max(90, Math.min(Math.round(innerHeight * 0.85), h)); document.documentElement.style.setProperty("--logh", h + "px"); return h };
+(() => { setLogH(+LS.get("dlogh", 170)); let drag = null; const g = $("#grip");
+  g.addEventListener("pointerdown", e => { drag = {y: e.clientY, h: $("#logbox").offsetHeight}; g.setPointerCapture(e.pointerId) });
+  g.addEventListener("pointermove", e => { if (drag) setLogH(drag.h + (drag.y - e.clientY)) });
+  g.addEventListener("pointerup", () => { if (drag) { LS.set("dlogh", $("#logbox").offsetHeight); drag = null } });
+  g.addEventListener("dblclick", () => LS.set("dlogh", setLogH($("#logbox").offsetHeight > innerHeight * 0.5 ? 200 : innerHeight * 0.7))); })();
+
+// ── 대시보드 ──
+const STAGES = [
+  {c: "s0-rewrite", n: "0 안전 개작", k: "Claude", d: "01_raw 교과서 원문 → 02_rewrite. 개념어·정의는 유지, 사례만 교체, 문단·분량 유지. 유사도·보존어를 코드가 검증."},
+  {c: "s1-script", n: "1 대본", k: "Claude", d: "개작본(02)만 읽어 관점별 쇼츠로 나누고 후크·문장·연출 메모·그림 목록·유튜브 제목까지 씁니다(03_script)."},
+  {c: "s2-tts", n: "2 목소리", k: "SuperTonic3", d: "문장마다 음성을 만들어 잇고, 문장별 시작·끝 시각을 적습니다(모션이 이 박자에 맞춤)."},
+  {c: "s3-images", n: "3 그림", k: "Claude SVG", d: "그림 6~8장을 Claude 가 SVG 일러스트로 그려 PNG 로. 한 편에 3~5분. 「그림은 한 편만」으로 톤 먼저 확인."},
+  {c: "s4-motion", n: "4 모션", k: "Claude", d: "대사·타이밍·그림·스타일로 HTML+GSAP 장면을 짭니다. 브라우저 점검에서 문제가 나오면 Claude 가 다시 고침."},
+  {c: "s5-render", n: "5 영상", k: "Playwright·ffmpeg", d: "장면을 프레임마다 찍어 1080×1920 mp4 + 음성. 한 편에 1분 안팎."},
+  {c: "make", n: "딸깍", k: "0→5 전부", d: "남은 단계만 차례로 끝까지. 이미 된 건 건너뜁니다.", p: true},
+];
+function opts(cmd) {
+  const a = [cmd, "--job", S.job]; const only = $("#o-only").value.trim();
+  if (only) a.push("--only", only); if ($("#o-force").checked) a.push("--force");
+  if ($("#o-limit").checked && (cmd === "s3-images" || cmd === "make")) a.push("--limit", "1");
+  return a;
+}
+function renderStages() {
+  $("#stages").innerHTML = STAGES.map(s => `<div class="stage" data-cmd="${s.c}"><div class="t">${s.n} <small>${s.k}</small></div><p>${s.d}</p>
+    <button class="b ${s.p ? "p" : ""}" data-run="${s.c}">실행</button></div>`).join("");
+  document.querySelectorAll("[data-run]").forEach(b => b.onclick = () => {
+    if (!S.job) return alert("작업을 먼저 만드세요 (「새 작업·원고」 탭)");
+    const c = b.dataset.run; run(opts(c), (c === "make" && !$("#o-only").value.trim()) ? "전체를 끝까지 만듭니다 (한 편에 10~15분, Claude 사용량 사용). 진행할까요?" : null);
+  });
+}
+const yes = (v, t = "✓") => v ? `<span class="ok">${t}</span>` : `<span class="no">—</span>`;
+async function viewDash() {
+  renderStages();
+  if (!S.job) { $("#rows").innerHTML = `<tr><td colspan="11"><div class="empty">작업이 없어요 — 「새 작업·원고」 탭에서 원고를 불러오세요.</div></td></tr>`; return }
+  const r = S.rows = await api(`/api/jobs/${S.job}/shorts`);
+  $("#o-info").textContent = `스타일 ${r.style} · 목소리 ${r.voice} ×${r.speed} · 원고 ${r.docs.map(d => d.prefix).join(", ") || "없음"}`;
+  const v = r.shorts.filter(x => x.steps.video).length, up = r.shorts.filter(x => x.posted).length;
+  $("#sum").textContent = `— ${r.shorts.length}편 · 영상 ${v} · 올림 ${up}`;
+  $("#rows").innerHTML = r.shorts.length ? r.shorts.map(i => {
+    const [a, b] = i.steps.images.split("/"); const imgOk = a === b && b !== "0";
+    return `<tr>
+      <td><div class="thumb" style="${i.thumb ? `background-image:url(${i.thumb}?t=${Date.now()})` : ""}"></div></td>
+      <td><b>${esc(i.id)}</b>${i.overridden ? ' <span class="mini" title="손편집 있음">✎</span>' : ""}</td>
+      <td><b>${esc(i.perspective)}</b><div class="mini">${esc(i.hook.line1 || "")} / ${esc(i.hook.line2 || "")}</div></td>
+      <td class="num">${i.lines}</td><td class="num">${i.duration ? i.duration.toFixed(1) + "초" : "—"}</td>
+      <td>${yes(i.steps.audio)}</td><td>${imgOk ? `<span class="ok">${i.steps.images}</span>` : `<span class="${a === "0" ? "no" : "warn"}">${i.steps.images}</span>`}</td>
+      <td>${i.steps.motion ? (i.motion_problems.length ? `<span class="warn" title="${esc(i.motion_problems.join("\n"))}">△ ${i.motion_problems.length}</span>` : `<span class="ok">✓</span>`) : yes(false)}</td>
+      <td>${yes(i.steps.video)}</td>
+      <td><span class="tag ${i.status}">${STATUS[i.status]}${i.scheduled?.when ? " " + esc(i.scheduled.when.slice(5)) : ""}</span>${i.error ? `<div class="bad mini" title="${esc(i.error)}">✗ 오류</div>` : ""}</td>
+      <td><div class="row" style="gap:4px">
+        <button class="b s p" data-row="make" data-id="${esc(i.id)}">딸깍</button>
+        <button class="b s" data-row="s4-motion" data-id="${esc(i.id)}" title="Claude 가 모션을 새로 짬(--force)">모션 다시</button>
+        <button class="b s" data-row="s5-render" data-id="${esc(i.id)}" title="영상만 다시 굽기(--force)">영상 다시</button>
+        <button class="b s" data-view="${esc(i.id)}">보기</button></div></td></tr>`}).join("")
+    : `<tr><td colspan="11"><div class="empty">아직 대본이 없어요 — 위 「1 대본」 또는 「딸깍」</div></td></tr>`;
+  document.querySelectorAll("[data-row]").forEach(b => b.onclick = () => {
+    const a = [b.dataset.row, "--job", S.job, "--only", b.dataset.id]; if (b.dataset.row !== "make") a.push("--force"); run(a) });
+  document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => { S.sel = b.dataset.view; tab("view") });
+}
+
+// ── 결과 보기 ──
+function field(label, id, val, rows = 2, max = 0) {
+  return `<div><label class="f">${label}${max ? `<span class="count" data-for="${id}" data-max="${max}"></span>` : ""}</label><textarea id="${id}" rows="${rows}">${esc(val)}</textarea></div>`;
+}
+async function viewView() {
+  if (!S.job) { $("#v-list").innerHTML = `<div class="empty">작업이 없어요</div>`; $("#v-media").innerHTML = $("#v-edit").innerHTML = ""; return }
+  const r = await api(`/api/jobs/${S.job}/shorts`);
+  if (!r.shorts.find(x => x.id === S.sel)) S.sel = r.shorts[0]?.id || null;
+  $("#v-list").innerHTML = `<h2>쇼츠</h2>` + (r.shorts.map(i => `<div class="it ${i.id === S.sel ? "on" : ""}" data-id="${esc(i.id)}"><b>${esc(i.id)} · ${esc(i.perspective)}</b>
+      <span>${esc(i.hook.line1 || "")}</span> <span class="tag ${i.status}" style="float:right">${STATUS[i.status]}</span></div>`).join("") || `<div class="empty">대본이 없어요</div>`);
+  document.querySelectorAll("#v-list .it").forEach(el => el.onclick = () => { S.sel = el.dataset.id; viewView() });
+  if (!S.sel) { $("#v-media").innerHTML = $("#v-edit").innerHTML = ""; return }
+  const id = S.sel, d = await api(`/api/jobs/${S.job}/shorts/${id}`); const p = d.short, yt = p.youtube || {};
+  const mt = LS.get("mediaTab", "video");
+  $("#v-media").innerHTML = `<div class="row" style="margin-bottom:8px"><h2 style="margin:0;flex:1">${esc(id)} ${d.duration ? `<span class="mini">${d.duration.toFixed(1)}초</span>` : ""}</h2>
+      <button class="b s ${mt === "video" ? "p" : ""}" data-mt="video">영상</button><button class="b s ${mt === "motion" ? "p" : ""}" data-mt="motion">모션</button></div>
+    ${mt === "video" ? (d.video ? `<video class="v" src="${d.video}" controls playsinline></video>` : `<div class="empty">영상이 아직 없어요</div>`)
+      : (d.motion ? `<iframe class="m" src="${d.motion}"></iframe><p class="mini">화면을 클릭하면 음성과 함께 재생 · <a href="${d.motion}" target="_blank">새 창 ↗</a></p>` : `<div class="empty">모션이 아직 없어요</div>`)}
+    ${d.motion_problems.length ? `<p class="warn mini">△ 모션 점검: ${esc(d.motion_problems.join(" / "))}</p>` : ""}
+    <div class="row" style="margin-top:10px">
+      <button class="b" data-st="s2-tts">목소리 다시</button><button class="b" data-st="s4-motion">모션 다시</button><button class="b" data-st="s5-render">영상 다시</button>
+      <button class="b p" id="bRemake" title="바뀐 단계만 끝까지">바뀐 것만 끝까지</button></div>
+    <h2 style="margin-top:16px">그림 ${d.images.filter(i => i.has).length}/${d.images.length}</h2>
+    <div class="imgs">${d.images.map(im => `<div class="im"><div class="ph ${im.role === "sticker" ? "" : "bg"}" style="${im.has ? `background-image:url(${im.url}?t=${Date.now()})` : ""}"></div>
+      <div class="note"><b>${esc(im.file.slice(0, 2))}</b> ${esc(im.role)} · ${esc(im.subject)}</div>
+      <label class="b s"><input type="file" accept="image/*" data-up="${esc(im.file)}" hidden>교체</label> <button class="b s" data-copy="${esc(im.file)}">설명 복사</button></div>`).join("")}</div>
+    <div class="row" style="margin-top:8px"><button class="b" id="bReimg">그림 전부 다시 그리기</button></div>`;
+  $("#v-edit").innerHTML = `<h2>대본 고치기 ${d.overridden ? `<span class="mini">· 손편집 있음</span>` : ""}</h2>
+    <div class="ln"><div class="grid2">${field("후크 1줄 (맨 위)", "hk1", p.hook?.line1, 1, 15)}${field("후크 2줄", "hk2", p.hook?.line2, 1, 18)}</div></div>
+    ${(p.lines || []).map((ln, k) => `<div class="ln"><div class="grid2">${field(`문장 ${k + 1} · 자막`, `lt${k}`, ln.text, 2)}${field("읽는 소리", `ls${k}`, ln.say, 2)}</div>
+      <div class="grid2">${field("키워드(쉼표)", `lk${k}`, (ln.keywords || []).join(", "), 1)}${field("화면 연출 메모", `lv${k}`, ln.visual, 2)}</div></div>`).join("")}
+    ${field("모션 수정 요청 (Claude 에게)", "mnote", p.motion_note, 3)}
+    <div class="row" style="margin-top:10px"><button class="b p" id="bSave">저장 + 다시 만들기</button><button class="b" id="bSaveOnly">저장만</button>
+      ${d.overridden ? `<button class="b" id="bReset">원안으로</button>` : ""}</div>
+    <details><summary>유튜브 제목·설명·해시태그</summary>
+      ${field("제목 (#shorts 자동)", "ytT", yt.title, 2, 90)}${field("설명", "ytD", yt.description, 4)}${field("해시태그(쉼표, # 없이)", "ytH", (yt.hashtags || []).join(", "), 2)}
+      <div class="row" style="margin-top:8px"><button class="b" id="bSaveYt">저장</button><span class="mini">올라갈 제목: <b>${esc(d.upload.title)}</b></span></div></details>
+    ${d.state.posted ? `<p class="ok">✓ 올림 ${esc((d.state.posted.at || "").replace("T", " "))} ${d.state.posted.url ? `<a href="${esc(d.state.posted.url)}" target="_blank">열기</a>` : ""}</p>` : ""}`;
+  document.querySelectorAll("[data-mt]").forEach(b => b.onclick = () => { LS.set("mediaTab", b.dataset.mt); viewView() });
+  const counts = () => document.querySelectorAll(".count").forEach(c => { const n = [...$("#" + c.dataset.for).value].length, m = +c.dataset.max; c.textContent = `${n} / ${m}`; c.classList.toggle("over", n > m) });
+  document.querySelectorAll("#v-edit textarea").forEach(t => t.oninput = counts); counts();
+  const v = k => $("#" + k)?.value ?? ""; const split = s => s.split(/[,\n]/).map(x => x.trim().replace(/^#/, "")).filter(Boolean);
+  const patch = () => ({hook: {line1: v("hk1"), line2: v("hk2")}, motion_note: v("mnote"),
+    lines: (p.lines || []).map((_, k) => ({text: v(`lt${k}`), say: v(`ls${k}`), keywords: split(v(`lk${k}`)), visual: v(`lv${k}`)}))});
+  const save = async (pt, then) => { await api(`/api/jobs/${S.job}/shorts/${id}`, {method: "PUT", body: {patch: pt, then}}); pollLog() };
+  $("#bSave").onclick = () => save(patch(), ["make"]);
+  $("#bSaveOnly").onclick = async () => { await save(patch(), []); viewView() };
+  $("#bSaveYt").onclick = async () => { await save({youtube: {title: v("ytT"), description: v("ytD"), hashtags: split(v("ytH"))}}, []); viewView() };
+  $("#bReset") && ($("#bReset").onclick = async () => { if (confirm("손편집을 버릴까요?")) { await api(`/api/jobs/${S.job}/shorts/${id}/override`, {method: "DELETE"}); viewView() } });
+  $("#bRemake").onclick = () => run(["make", "--job", S.job, "--only", id]);
+  $("#bReimg").onclick = () => run(["s3-images", "--job", S.job, "--only", id, "--force"], "이 쇼츠의 그림을 Claude 가 새로 그립니다(직접 넣은 그림은 유지). 진행할까요?");
+  document.querySelectorAll("#v-media [data-st]").forEach(b => b.onclick = () => run([b.dataset.st, "--job", S.job, "--only", id, "--force"]));
+  document.querySelectorAll("[data-copy]").forEach(btn => btn.onclick = async () => {
+    const it = d.images.find(x => x.file === btn.dataset.copy);
+    const text = `이미지를 1장 생성해 주세요 (${it.size}${it.role === "sticker" ? ", 투명 배경 PNG" : ""}). 글자는 넣지 마세요.\n\n${it.prompt}`;
+    try { await navigator.clipboard.writeText(text); btn.textContent = "복사됨 ✓" } catch { prompt("복사하세요", text) } });
+  document.querySelectorAll("[data-up]").forEach(inp => inp.onchange = () => { const f = inp.files[0]; if (!f) return; const rd = new FileReader();
+    rd.onload = async () => { await api(`/api/jobs/${S.job}/images/${id}/${inp.dataset.up}`, {method: "POST", body: {data_url: rd.result}}); viewView() }; rd.readAsDataURL(f) });
+}
+
+// ── 새 작업·원고 ──
+let PICK = null;
+const base = p => p.split(/[\\/]/).filter(Boolean).pop() || "";
+async function doPick(kind) {
+  $("#pickInfo").textContent = "선택 창을 띄웠습니다 — 안 보이면 작업 표시줄에서 찾아 고르세요 …";
+  let r = await fetch("/api/pick", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({kind})}).then(x => x.ok ? x.json() : {_err: 1}).catch(() => ({_err: 1}));
+  if (r._err) { const path = prompt("선택 창을 띄우지 못했습니다. 원고 폴더 경로를 붙여 넣으세요:"); r = path ? await api("/api/pick", {method: "POST", body: {kind: "folder", path}}).catch(() => null) : null; kind = "folder" }
+  if (!r || !r.files?.length) { PICK = null; $("#nj-ok").disabled = true; $("#pickInfo").textContent = r?.folder ? `원고(.docx)가 없어요: ${r.folder}` : "선택을 취소했어요."; return }
+  PICK = {mode: kind, folder: r.folder || "", files: r.files};
+  $("#pickInfo").innerHTML = `원고 <b>${r.files.length}개</b> — ${esc(r.files.map(base).slice(0, 4).join(", "))}${r.files.length > 4 ? " …" : ""}`;
+  if (!$("#nj-name").value.trim()) $("#nj-name").value = (kind === "folder" ? base(r.folder) : base(r.files[0]).replace(/\.\w+$/, "")).replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32) || "job1";
+  $("#nj-ok").disabled = false;
+}
+$("#pickFolder").onclick = () => doPick("folder"); $("#pickFiles").onclick = () => doPick("files");
+$("#nj-ok").onclick = async () => {
+  const name = $("#nj-name").value.trim(); if (!PICK || !name) return;
+  await api("/api/jobs", {method: "POST", body: {name, ...(PICK.mode === "folder" ? {src: PICK.folder} : {files: PICK.files}),
+    title: $("#nj-title").value.trim(), style: $("#nj-style").value, voice: $("#nj-voice").value, rewritten: $("#nj-rw").checked}});
+  S.job = name; LS.set("job", name); PICK = null; $("#nj-ok").disabled = true; await loadState(); tab("dash");
+};
+async function viewNew() {
+  $("#docs-job").textContent = S.job ? `— ${S.job}` : "";
+  if (!S.job) { $("#docs").innerHTML = `<div class="empty">작업이 없어요 — 위에서 먼저 만드세요</div>`; return }
+  const r = await api(`/api/jobs/${S.job}/shorts`);
+  const chk = d => !d.rewrite ? `<span class="no">—</span>` : !d.check ? `<span class="mini">가져온 개작본</span>`
+    : d.check.passed ? `<span class="ok">✓ 통과</span> <span class="mini">사례 유사도 ${d.check.sim ?? "-"}</span>`
+    : `<span class="warn" title="${esc(d.check.problems.join("\n"))}">△ ${d.check.problems.length}건</span>`;
+  $("#docs").innerHTML = r.docs.length ? `<table><thead><tr><th>번호</th><th>단원 폴더</th><th>01 원본</th><th>02 개작본</th><th>검증</th><th>바꾼 사례</th><th class="num">쇼츠</th><th></th></tr></thead><tbody>
+    ${r.docs.map(d => `<tr><td><b>${esc(d.prefix)}</b></td><td>${esc(d.dir)}<div class="mini">${esc(d.chapter)}</div></td>
+      <td>${d.raw ? '<span class="ok">✓</span>' : '<span class="no">—</span>'}</td><td>${d.rewrite ? '<span class="ok">✓</span>' : '<span class="warn">아직</span>'}</td>
+      <td>${chk(d)}</td><td class="mini">${esc((d.check?.swaps || []).map(x => x.from + "→" + x.to).join(", "))}</td><td class="num">${d.shorts}</td>
+      <td><div class="row" style="gap:4px">${d.raw || d.rewrite ? `<button class="b s" data-cmp="${esc(d.prefix)}">비교</button>` : ""}
+        ${d.raw ? `<button class="b s" data-rw="${esc(d.prefix)}" title="Claude 가 개작본을 새로 씀(--force)">${d.rewrite ? "개작 다시" : "개작하기"}</button>` : ""}</div></td></tr>`).join("")}</tbody></table>`
+    : `<div class="empty">원고가 없어요</div>`;
+  document.querySelectorAll("[data-rw]").forEach(b => b.onclick = () => run(["s0-rewrite", "--job", S.job, "--only", b.dataset.rw, "--force"],
+    `${b.dataset.rw} 원문으로 개작본을 새로 씁니다(지금 개작본은 바뀝니다). 진행할까요?`));
+  document.querySelectorAll("[data-cmp]").forEach(b => b.onclick = () => openCompare(b.dataset.cmp));
+}
+async function openCompare(prefix) {
+  const c = await api(`/api/jobs/${S.job}/units/${prefix}/compare`); const k = c.check || {};
+  const n = Math.max(c.raw.length, c.rewrite.length); const rows = (k.rows || []);
+  $("#cmpBody").innerHTML = `<h2>${esc(c.dir)} <span class="mini">— 왼쪽 01 원본 · 오른쪽 02 개작본</span></h2>
+    ${k.output ? `<p class="mini">${k.passed ? '<span class="ok">✓ 검증 통과</span>' : '<span class="warn">△ ' + esc((k.problems || []).join(" / ")) + '</span>'}
+      · 문단 ${k.paragraphs} · 글자 ${k.chars_orig} → ${k.chars_new} · 사례 유사도 최대 ${k.example_sim_max}
+      · 보존어 ${esc((k.keep_terms || []).join(", "))}<br>바꾼 사례: ${esc((k.swaps || []).map(x => x.from + " → " + x.to).join(", "))}<br>${esc(k.note || "")}</p>` : ""}
+    <table><thead><tr><th style="width:4%">#</th><th style="width:8%">종류</th><th style="width:44%">01 원본</th><th style="width:44%">02 개작본</th></tr></thead><tbody>
+    ${Array.from({length: n}, (_, i) => { const r = rows[i] || {}; return `<tr><td class="mini">${i}</td>
+      <td class="mini">${esc(r.kind || "")}${r.sim != null ? `<div class="${r.kind === "example" && r.sim > 0.7 ? "bad" : ""}">유사 ${r.sim}</div>` : ""}</td>
+      <td style="vertical-align:top">${esc(c.raw[i] || "")}</td><td style="vertical-align:top">${esc(c.rewrite[i] || "")}</td></tr>` }).join("")}</tbody></table>`;
+  $("#cmp").showModal();
+}
+async function addFiles(files) {
+  if (!S.job) return alert("작업을 먼저 만드세요");
+  for (const f of files) { const url = await new Promise(res => { const rd = new FileReader(); rd.onload = () => res(rd.result); rd.readAsDataURL(f) });
+    await api(`/api/jobs/${S.job}/upload-docx`, {method: "POST", body: {filename: f.name, data_url: url, stage: $("#drop-rw").checked ? "rewrite" : "raw"}}) }
+  viewNew();
+}
+const dz = $("#drop");
+dz.ondragover = e => { e.preventDefault(); dz.classList.add("over") }; dz.ondragleave = () => dz.classList.remove("over");
+dz.ondrop = e => { e.preventDefault(); dz.classList.remove("over"); addFiles([...e.dataTransfer.files]) };
+$("#dropInput").onchange = e => addFiles([...e.target.files]);
+
+// ── 설정 ──
+const SFIELDS = [
+  ["claude", "script_model", "대본 모델", "text"], ["claude", "image_model", "그림 모델", "text"], ["claude", "motion_model", "모션 모델", "text"],
+  ["claude", "effort", "생각 깊이 (low·medium·high)", "text"], ["claude", "see_images", "모션 때 그림을 직접 보기", "bool"], ["claude", "fix_rounds", "모션 점검 후 고치기 횟수", "num"],
+  ["shorts", "target_seconds", "목표 길이(초)", "num"], ["shorts", "lines_min", "문장 수 최소", "num"], ["shorts", "lines_max", "문장 수 최대", "num"],
+  ["shorts", "images_min", "그림 수 최소", "num"], ["shorts", "images_max", "그림 수 최대", "num"], ["shorts", "style", "기본 스타일", "style"],
+  ["tts", "bridge_dir", "SuperTonic3(영상공방) 폴더", "text"], ["tts", "voice", "기본 목소리", "voice"], ["tts", "speed", "기본 말 빠르기", "num"],
+  ["youtube", "native_schedule", "예약은 YouTube 예약 공개로(PC 꺼져도 됨)", "bool"], ["youtube", "visibility", "기본 공개 범위 (public·unlisted·private)", "text"], ["youtube", "slots", "자동 예약 시각(쉼표)", "list"],
+];
+async function viewGoal() {
+  const g = await api("/api/settings");
+  $("#s-form").innerHTML = SFIELDS.map(([sec, k, lab, t]) => { const v = g.values[sec][k]; const id = `s-${sec}-${k}`;
+    const inp = t === "bool" ? `<input type="checkbox" id="${id}" ${v ? "checked" : ""} style="justify-self:start">`
+      : t === "style" ? `<select id="${id}" style="max-width:300px">${g.styles.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select>`
+      : t === "voice" ? `<select id="${id}" style="max-width:120px">${g.voices.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select>`
+      : `<input id="${id}" value="${esc(t === "list" ? (v || []).join(", ") : v ?? "")}" ${t === "num" ? 'type="number" step="any" style="max-width:120px"' : 'style="max-width:520px"'}>`;
+    return `<label>${lab}</label>${inp}` }).join("") + `<label></label><span class="mini">SuperTonic3: ${g.tts_ok ? '<span class="ok">✓ 확인</span>' : '<span class="bad">✗ 못 찾음</span>'} <code>${esc(g.tts_dir)}</code> · 빈칸이면 기본 위치</span>`;
+  if (S.job) { const m = await api(`/api/jobs/${S.job}/meta`); $("#g-job").textContent = `— jobs/${S.job}/job.json`;
+    $("#g-title").value = m.title || ""; $("#g-style").value = m.shorts?.style || ""; $("#g-voice").value = m.tts?.voice || ""; $("#g-speed").value = m.tts?.speed ?? "" }
+}
+$("#s-save").onclick = async () => {
+  const vals = {};
+  for (const [sec, k, , t] of SFIELDS) { const el = $(`#s-${sec}-${k}`); let v = t === "bool" ? el.checked : el.value;
+    if (t === "num") v = v === "" ? null : +v; if (t === "list") v = v.split(",").map(x => x.trim()).filter(Boolean);
+    if (v === null) continue; (vals[sec] ||= {})[k] = v }
+  const r = await api("/api/settings", {method: "PUT", body: {values: vals}});
+  $("#s-msg").innerHTML = `저장했어요. SuperTonic3 ${r.tts_ok ? '<span class="ok">✓</span>' : '<span class="bad">✗ 못 찾음</span>'}`; checkTools(); viewGoal();
+};
+$("#g-save").onclick = async () => {
+  if (!S.job) return; const m = await api(`/api/jobs/${S.job}/meta`);
+  m.title = $("#g-title").value.trim() || m.title;
+  const st = $("#g-style").value, vo = $("#g-voice").value, sp = $("#g-speed").value;
+  m.shorts = {...(m.shorts || {})}; if (st) m.shorts.style = st; else delete m.shorts.style;
+  m.tts = {...(m.tts || {})}; if (vo) m.tts.voice = vo; else delete m.tts.voice; if (sp) m.tts.speed = +sp; else delete m.tts.speed;
+  await api(`/api/jobs/${S.job}/meta`, {method: "PUT", body: m}); await loadState(); alert("저장했어요.");
+};
+
+// ── 계정·올리기 ──
+async function viewAcct() {
+  checkTools();
+  const st = S.state;
+  $("#a-yt").innerHTML = st.accounts.length ? st.accounts.map(a => `<tr><td><input type="radio" name="cur" data-use="${esc(a.name)}" ${a.name === st.current ? "checked" : ""}></td>
+      <td><b>${esc(a.name)}</b></td><td>${esc(a.label)}</td><td id="lg-${esc(a.name)}" class="mini">확인 중…</td>
+      <td><button class="b s" data-login="${esc(a.name)}">로그인 창</button></td></tr>`).join("")
+    : `<tr><td colspan="5"><div class="empty">계정이 없어요 — 아래에서 추가</div></td></tr>`;
+  st.accounts.forEach(async a => { const s = await api(`/api/accounts/${a.name}/status`).catch(() => ({}));
+    const el = document.getElementById("lg-" + a.name); if (el) el.innerHTML = s.logged_in ? '<span class="ok">✓ 로그인됨</span>' : s.chrome ? '<span class="bad">Chrome 은 떠 있지만 로그인 안 됨</span>' : "Chrome 꺼짐" });
+  document.querySelectorAll("[data-use]").forEach(r => r.onchange = async () => { await api(`/api/accounts/${r.dataset.use}/use`, {method: "POST"}); await loadState() });
+  document.querySelectorAll("[data-login]").forEach(b => b.onclick = async () => { await api(`/api/accounts/${b.dataset.login}/login`, {method: "POST"}); setTimeout(viewAcct, 5000) });
+  const rows = await api("/api/schedule");
+  $("#a-sched").innerHTML = rows.length ? `<table><thead><tr><th>시각</th><th>쇼츠</th><th>작업</th><th>계정</th><th>상태</th></tr></thead><tbody>${rows.map(r => `<tr><td><b>${esc(r.when)}</b></td><td>${esc(r.title)}</td><td>${esc(r.job)}</td><td>${esc(r.account || "")}</td>
+      <td><span class="tag ${r.mode === "native" ? "scheduled" : r.posted ? "posted" : "scheduled"}">${r.mode === "native" ? "YouTube 예약" : r.posted ? "올림" : "예약"}</span> ${r.url ? `<a href="${esc(r.url)}" target="_blank">열기</a>` : ""} ${r.error ? `<span class="bad">✗ ${esc(r.error)}</span>` : ""}</td></tr>`).join("")}</tbody></table>`
+    : `<div class="empty">예약·올린 기록이 없어요</div>`;
+}
+$("#acc-add").onclick = async () => { await api("/api/accounts", {method: "POST", body: {name: $("#acc-name").value.trim(), label: $("#acc-label").value.trim()}});
+  $("#acc-name").value = $("#acc-label").value = ""; await loadState(); viewAcct() };
+$("#a-panel").onclick = async () => { await api("/api/panel", {method: "POST"}); const a = S.state.current; if (a) api(`/api/accounts/${a}/login`, {method: "POST"}).catch(() => {}) };
+$("#a-claude-btn").onclick = () => { const again = $("#a-claude-btn").textContent !== "Claude 로그인";
+  if (again && !confirm("다른 Claude 계정으로 바꿀까요? 브라우저에서 새로 로그인하게 됩니다.")) return; setLogH(Math.max($("#logbox").offsetHeight, 260)); run(["claude-login"]) };
+$("#a-tts-set").onclick = () => tab("goal");
+$("#a-doc").onclick = () => run(["doctor"]); $("#a-assets").onclick = () => run(["assets"]);
+$("#a-probe").onclick = () => S.state.current ? run(["probe", "--account", S.state.current]) : alert("YouTube 계정을 먼저 추가하세요");
+$("#a-del").onclick = async () => { if (!S.job || !confirm(`「${S.job}」 작업을 지웁니다. 복사본·대본·음성·그림·모션·영상·기록이 모두 사라집니다(원본 원고 폴더는 그대로).`)) return;
+  await api(`/api/jobs/${S.job}`, {method: "DELETE"}); S.job = ""; await loadState(); tab("dash") };
+$("#a-quit").onclick = async () => { if (!confirm("aside-shorts 를 끌까요? 이 프로그램의 대기열 예약은 다음에 켤 때 이어서 올라가요.")) return;
+  await api("/api/quit", {method: "POST"}).catch(() => {}); document.body.innerHTML = '<div class="empty" style="margin:60px">껐어요. 다시 쓰려면 run.bat 을 누르세요.</div>' };
+
+// ── 탭 ──
+function tab(t) {
+  S.tab = t; LS.set("tab", t);
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hide", s.id !== "tab-" + t));
+  refresh();
+}
+function refresh() {
+  return ({dash: viewDash, view: viewView, newjob: viewNew, goal: viewGoal, acct: viewAcct}[S.tab] || viewDash)();
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+$("#job").onchange = e => { S.job = e.target.value; LS.set("job", S.job); S.sel = null; refresh() };
+$("#loginClose").onclick = () => $("#loginBar").classList.add("hide");
+$("#btnStop").onclick = () => api("/api/stop", {method: "POST"});
+$("#btnClr").onclick = () => { $("#log").textContent = "" };
+setInterval(() => { if (S.tab === "dash" && !document.hidden) viewDash().catch(() => {}) }, 15000);
+loadState().then(() => tab(S.tab)); pollLog(); checkTools(); setInterval(checkTools, 60000);
+</script>
+</body>
+</html>

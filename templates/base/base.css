@@ -1,0 +1,28 @@
+/* 1080×1920 고정 캔버스. 영역(세이프존):
+ *   0~320     #hook (상단 후크 — 런타임이 채움)
+ *   340~1400  주 무대 — 장면의 핵심 요소는 여기에
+ *   1430~1640 #captions (자막 — 런타임이 채움)
+ *   1660~1920 유튜브 UI(제목·채널)가 덮는다 — 배경만
+ *   x 960~1080 (y 900~1800) 오른쪽 버튼이 덮는다 — 중요한 것 두지 않기
+ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1080px; height: 1920px; overflow: hidden; background: #000; }
+body { font-family: "Pretendard", "Malgun Gothic", sans-serif; -webkit-font-smoothing: antialiased; }
+#frame { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg, #f3ecdf); }
+#stage { position: absolute; inset: 0; overflow: hidden; z-index: 1; }
+#stage img { display: block; }
+
+#hook { position: absolute; left: 0; right: 0; top: 0; height: 320px; z-index: 20;
+        display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px;
+        padding: 40px 60px 20px; text-align: center; }
+#hook .l1 { font-weight: 900; font-size: 74px; line-height: 1.12; letter-spacing: -0.02em; }
+#hook .l2 { font-weight: 700; font-size: 46px; line-height: 1.2; }
+
+#captions { position: absolute; left: 60px; right: 60px; top: 1430px; height: 210px; z-index: 20; }
+.cap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; }
+.cap span { display: inline-block; max-width: 100%; text-align: center; font-weight: 800; font-size: 54px;
+            line-height: 1.32; letter-spacing: -0.01em; word-break: keep-all; padding: 10px 26px; border-radius: 14px; }
+
+/* 스티커: 투명 PNG 에 흰 테두리 + 그림자 (class="sticker") */
+.sticker { filter: drop-shadow(5px 0 0 #fff) drop-shadow(-5px 0 0 #fff) drop-shadow(0 5px 0 #fff)
+                   drop-shadow(0 -5px 0 #fff) drop-shadow(0 18px 22px rgba(0,0,0,.28)); }

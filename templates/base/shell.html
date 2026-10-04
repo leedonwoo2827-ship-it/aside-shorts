@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>{{TITLE}}</title>
+<style>
+{{FONTS_CSS}}
+</style>
+<link rel="stylesheet" href="{{BASE_CSS}}">
+<link rel="stylesheet" href="{{STYLE_CSS}}">
+<script src="{{GSAP}}"></script>
+</head>
+<body>
+<div id="frame">
+  <div id="stage">
+<!-- ===== SCENE (Claude) ===== -->
+{{SCENE_HTML}}
+<!-- ===== /SCENE ===== -->
+  </div>
+  <div id="hook"><div class="l1"></div><div class="l2"></div></div>
+  <div id="captions"></div>
+</div>
+<script>window.SHORT = {{SHORT_JSON}};</script>
+<script src="{{RUNTIME}}"></script>
+<script>
+try {
+{{SCENE_JS}}
+} catch (e) { window.__errors.push("scene: " + (e && e.stack || e)); }
+</script>
+<script>window.__finish();</script>
+</body>
+</html>

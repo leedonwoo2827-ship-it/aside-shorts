@@ -1,0 +1,9 @@
+{
+  "claude": { "script_model": "opus", "image_model": "opus", "motion_model": "opus", "effort": "high", "see_images": true, "fix_rounds": 2 },
+  "shorts": { "target_seconds": 35, "lines_min": 6, "lines_max": 8, "images_min": 6, "images_max": 8, "style": "vox-retro" },
+  "tts": { "bridge_dir": "", "voice": "F4", "speed": 1.1 },
+  "image": { "workers": 2 },
+  "render": { "fps": 30, "crf": 18 },
+  "youtube": { "chrome": "", "native_schedule": true, "visibility": "public", "slots": ["12:00", "19:00"], "base_port": 9361 },
+  "ui": { "port": 5293, "width": 460 }
+}

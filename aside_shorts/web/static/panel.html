@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aside · Shorts</title>
+<style>
+:root{--bg:#F6F1E8;--card:#FFFDF8;--ink:#1E293B;--body:#334155;--mute:#94A3B8;--line:#E7DFD0;
+      --a:#1F4E79;--b:#9DC3E6;--ok:#2E7D5B;--warn:#C77700;--bad:#E4572E;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--body);
+  font:14px/1.5 "Pretendard","Noto Sans KR","Malgun Gothic",sans-serif;letter-spacing:-.01em}
+button,select,input,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 14px 8px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.brand b{font-size:16px;color:var(--a);letter-spacing:-.02em}
+.brand small{color:var(--mute)}
+.row{display:flex;gap:6px;align-items:center}
+.row>select{flex:1;min-width:0}
+select,input,textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+textarea{width:100%;resize:vertical;line-height:1.55}
+button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+button:hover{border-color:var(--b)}
+button.pri{background:var(--a);border-color:var(--a);color:#fff;font-weight:700}
+button.hot{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+button:disabled{opacity:.45;cursor:default}
+.btnlike{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--mute);display:inline-block}
+.dot.on{background:var(--ok)}.dot.off{background:var(--bad)}
+nav{display:flex;gap:4px;margin-top:8px}
+nav button{flex:1;border:none;background:none;border-bottom:2px solid transparent;border-radius:0;color:var(--mute);font-weight:700}
+nav button.on{color:var(--a);border-color:var(--a)}
+main{padding:10px 14px calc(var(--logh,180px) + 20px)}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.item{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;padding:8px;margin-bottom:6px;cursor:pointer}
+.item:hover{border-color:var(--b)}
+.thumb{width:44px;height:78px;border-radius:6px;background:#EEE7DA center/cover no-repeat}
+.item .t{font-weight:700;color:var(--ink);font-size:13px;line-height:1.35}
+.item .h{color:var(--mute);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;background:#EEE7DA;color:var(--body)}
+.tag.ready{background:#DDEBF7;color:var(--a)}.tag.scheduled{background:#FFF1D6;color:var(--warn)}
+.tag.posted{background:#DDF1E6;color:var(--ok)}.tag.error{background:#FBE3DC;color:var(--bad)}
+.carousel{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;margin:0 -14px;padding-left:14px;padding-right:14px}
+.carousel img{width:82%;flex:none;scroll-snap-align:center;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}
+.empty{padding:28px 10px;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:12px}
+label.f{display:block;font-size:12px;font-weight:700;color:var(--a);margin:12px 0 4px}
+.count{float:right;font-weight:600;color:var(--mute)}.count.over{color:var(--bad)}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:12px}
+summary{cursor:pointer;font-weight:700;color:var(--a)}
+.sec{border-top:1px solid var(--line);margin-top:14px;padding-top:10px}
+.back{border:none;background:none;color:var(--a);padding:0;font-weight:700}
+.note{font-size:12px;color:var(--mute)}
+#logbox{position:fixed;left:0;right:0;bottom:0;height:var(--logh,180px);background:#1E293B;color:#E2E8F0;
+  font:12px/1.45 Consolas,"D2Coding",monospace;display:flex;flex-direction:column;z-index:20;
+  box-shadow:0 -6px 18px rgba(30,41,59,.18)}
+#grip{height:14px;flex:none;cursor:ns-resize;display:flex;align-items:center;justify-content:center;background:#16202F;touch-action:none}
+#grip::before{content:"";width:46px;height:4px;border-radius:2px;background:#475569}
+#grip:hover::before{background:#94A3B8}
+#logbox .hd{flex:none;display:flex;justify-content:space-between;align-items:center;color:#94A3B8;padding:4px 10px;gap:8px}
+#logst{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#logst.run{color:#FBBF24}#logst.ok{color:#4ADE80}#logst.bad{color:#F87171}
+#log{flex:1;overflow:auto;white-space:pre-wrap;padding:0 10px 8px}
+#logbox button{background:#334155;border-color:#475569;color:#fff;padding:0 8px;font-size:11px}
+.sched{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:6px;font-size:13px}
+.sched .w{font-weight:800;color:var(--a);font-variant-numeric:tabular-nums}
+dialog{border:none;border-radius:14px;padding:16px;width:min(92vw,380px)}
+dialog::backdrop{background:rgba(30,41,59,.35)}
+#zoom{padding:0;width:96vw;background:none}#zoom img{width:100%;display:block;border-radius:10px}
+.steps{margin-top:3px;display:flex;gap:3px;flex-wrap:wrap}
+.chip{font-size:10.5px;border-radius:6px;padding:0 5px;background:#EEE7DA;color:var(--mute)}.chip.ok{background:#DDF1E6;color:var(--ok)}
+.tag.motion{background:#EDE4FA;color:#6B3FA0}
+.vid{width:100%;max-height:70vh;aspect-ratio:9/16;background:#000;border-radius:12px;display:block}
+.line{border-left:3px solid var(--line);padding-left:8px;margin-top:8px}
+.imgs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.ph{aspect-ratio:1;border-radius:8px;background:#EEE7DA center/contain no-repeat;border:1px solid var(--line)}
+.ph.sticker{background-color:#d9d2c3}
+.ph.background,.ph.diagram{aspect-ratio:2/3;background-size:cover}
+a.btnlike{text-decoration:none;color:var(--a);font-weight:700}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><b>aside · Shorts</b><span class="row" style="gap:8px"><a href="/" target="_blank" class="btnlike" style="padding:2px 8px;font-size:12px;text-decoration:none;color:var(--a)" title="제작 대시보드(넓은 창)">대시보드 ↗</a><small id="model"></small><button id="btnArrange" title="YouTube 창은 왼쪽, 패널은 오른쪽에 딱 붙입니다" style="padding:2px 8px;font-size:12px">⇔ 창 정렬</button></span></div>
+  <div class="row" style="margin-bottom:6px">
+    <span class="dot" id="cxdot"></span>
+    <span id="cxtxt" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">Claude 확인 중…</span>
+    <button id="btnClaude" title="대본·그림·모션을 만드는 Claude 구독 계정으로 로그인합니다(OAuth)">Claude 로그인</button>
+  </div>
+  <div class="row" style="margin-bottom:6px;font-size:13px">
+    <span class="dot" id="cldot"></span><span id="cltxt" style="flex:1">SuperTonic3 확인 중…</span>
+  </div>
+  <div class="row">
+    <span class="dot" id="acdot" title="로그인 상태"></span>
+    <select id="acc" title="올릴 YouTube 계정(채널)"></select>
+    <button id="btnLogin" title="왼쪽에 이 계정 Chrome 을 띄웁니다">로그인</button>
+    <button id="btnAddAcc" title="계정 추가">＋</button>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <select id="job" title="원고 묶음"></select>
+    <button id="btnNewJob" title="원고 폴더 지정 또는 파일 선택">＋원고</button>
+    <button id="btnDelJob" title="이 작업을 지웁니다 (원본 원고 폴더는 그대로)">🗑</button>
+  </div>
+  <nav><button data-tab="posts" class="on">쇼츠</button><button data-tab="sched">예약</button><button data-tab="help">도움말</button></nav>
+</header>
+<main id="main"></main>
+<div id="loginBar" style="display:none;position:fixed;left:10px;right:10px;bottom:calc(var(--logh,180px) + 10px);z-index:30;
+  background:#FFF7E0;border:1px solid #F2D27A;border-radius:12px;padding:10px 12px;box-shadow:0 6px 18px rgba(30,41,59,.18)">
+  <div style="font-weight:700;color:#7A5300;margin-bottom:6px">브라우저가 안 열렸나요?</div>
+  <div class="row"><a id="loginLink" target="_blank" rel="noopener" class="btnlike" style="text-decoration:none;color:var(--a);font-weight:700">🔑 로그인 페이지 열기</a>
+  <button id="loginClose" style="margin-left:auto">닫기</button></div>
+</div>
+<div id="logbox"><div id="grip" title="끌어서 높이 조절 · 더블클릭: 크게/작게"></div><div class="hd"><span id="logst">대기 중</span><span style="flex:none"><button id="btnStop">중지</button> <button id="btnClr">지우기</button></span></div><div id="log"></div></div>
+
+<dialog id="dlgAcc"><form method="dialog">
+  <b>계정 추가</b><p class="note">계정마다 Chrome 프로필이 따로 생깁니다. 이름은 영문(폴더 이름).</p>
+  <input id="accName" placeholder="dekman" style="width:100%"><br><br>
+  <input id="accLabel" placeholder="화면 표시 (예: @dekmanfactory)" style="width:100%"><br><br>
+  <div class="row" style="justify-content:flex-end"><button value="cancel">취소</button><button class="pri" value="ok">추가</button></div>
+</form></dialog>
+<dialog id="dlgJob"><form method="dialog">
+  <b>원고 불러오기</b><p class="note">절 하나(.docx) = 쇼츠 여러 편(관점별). 고른 원고를 작업 폴더로 복사해 옵니다(원본은 그대로).<br>260711 형식 폴더를 지정하면 각 절의 <b>02_</b>(안전 개작본)만 가져와요.</p>
+  <div class="row">
+    <button type="button" id="pickFolder" style="flex:1">📁 폴더 지정하기</button>
+    <button type="button" id="pickFiles" style="flex:1">📄 파일 선택하기</button>
+  </div>
+  <p class="note" id="pickInfo" style="margin:8px 0 10px;min-height:1.5em">폴더를 지정하면 안의 원고 전부, 파일을 선택하면 고른 것만 들어갑니다.</p>
+  <input id="jobName" placeholder="작업 이름 (영문, 예: tonghap1)" style="width:100%"><br><br>
+  <input id="jobTitle" placeholder="시리즈 이름 (예: 고등학교 통합사회1)" style="width:100%"><br><br>
+  <div class="row"><select id="jobStyle" style="flex:2" title="모션 스타일"></select><select id="jobVoice" style="flex:1" title="목소리"></select></div><br>
+  <div class="row" style="justify-content:flex-end"><button value="cancel">취소</button><button class="pri" value="ok" id="jobOk" disabled>불러오기</button></div>
+</form></dialog>
+<dialog id="zoom"><img id="zoomImg" alt=""></dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const api = async (path, opt = {}) => {
+  const r = await fetch(path, {headers: {"Content-Type": "application/json"}, ...opt,
+                               body: opt.body ? JSON.stringify(opt.body) : undefined});
+  if (!r.ok) { const t = await r.text(); let m = t; try { m = JSON.parse(t).detail } catch {} ; alert(m); throw new Error(m) }
+  return r.json();
+};
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LS = { get(k, d) { try { return localStorage.getItem(k) ?? d } catch { return d } },
+             set(k, v) { try { localStorage.setItem(k, v) } catch {} } };
+
+let S = {tab: "posts", job: LS.get("job", ""), detail: null, state: null};
+const STATUS = {script: "대본", motion: "모션", ready: "영상 준비", scheduled: "예약", posted: "올림", error: "오류"};
+
+async function loadState() {
+  S.state = await api("/api/state");
+  const st = S.state;
+  $("#model").textContent = "";
+  $("#jobStyle").innerHTML = st.styles.map(x => `<option value="${esc(x.name)}">${esc(x.label)}</option>`).join("");
+  $("#jobVoice").innerHTML = st.voices.map(x => `<option ${x === "F4" ? "selected" : ""}>${x}</option>`).join("");
+  $("#acc").innerHTML = st.accounts.length
+    ? st.accounts.map(a => `<option value="${esc(a.name)}" ${a.name === st.current ? "selected" : ""}>${esc(a.label || a.name)}</option>`).join("")
+    : `<option value="">계정 없음 — ＋로 추가</option>`;
+  if (!st.jobs.find(j => j.name === S.job)) S.job = st.jobs[0]?.name || "";
+  $("#job").innerHTML = st.jobs.length
+    ? st.jobs.map(j => `<option value="${esc(j.name)}" ${j.name === S.job ? "selected" : ""}>${esc(j.title)}</option>`).join("")
+    : `<option value="">원고 없음 — ＋원고</option>`;
+  checkLogin();
+}
+async function checkClaude() {
+  const c = await api("/api/claude").catch(() => null); if (!c) return;
+  $("#cxdot").className = "dot " + (c.logged_in ? "on" : "off");
+  $("#cxtxt").textContent = !c.installed ? "Claude(claude 명령)가 설치되어 있지 않아요"
+    : c.logged_in ? `Claude · ${c.email || "로그인됨"}${c.plan ? " · " + c.plan : ""}` : "Claude 로그인이 필요해요";
+  $("#btnClaude").textContent = c.logged_in ? "다른 계정" : "Claude 로그인";
+  $("#btnClaude").className = c.logged_in ? "" : "pri";
+  $("#btnClaude").disabled = !c.installed;
+}
+async function checkTools() {
+  const t = await api("/api/tools").catch(() => null); if (!t) return;
+  $("#cldot").className = "dot " + (t.claude && t.tts ? "on" : "off");
+  $("#cldot").className = "dot " + (t.tts ? "on" : "off");
+  $("#cltxt").textContent = t.tts ? "목소리 SuperTonic3 ✓" : "SuperTonic3 없음 — " + t.tts_dir;
+}
+async function checkLogin() {
+  const a = $("#acc").value; const d = $("#acdot");
+  if (!a) { d.className = "dot"; return }
+  const s = await api(`/api/accounts/${a}/status`).catch(() => ({}));
+  d.className = "dot " + (s.logged_in ? "on" : s.chrome ? "off" : "");
+  d.title = s.logged_in ? "로그인됨" : s.chrome ? "Chrome 은 떠 있지만 로그인 안 됨" : "Chrome 꺼짐 — 「로그인」을 누르면 왼쪽에 뜹니다";
+}
+
+// ── 실행 · 로그 ──
+let logNext = 0, wasBusy = false;
+async function run(args, msg) {
+  if (msg && !confirm(msg)) return;
+  await api("/api/run", {method: "POST", body: {args}});
+  pollLog();
+}
+async function pollLog() {
+  const r = await api(`/api/log?since=${logNext}`).catch(() => null);
+  if (r) {
+    logNext = r.next;
+    if (r.lines.length) {
+      // 「Claude 로그인」이 내보낸 로그인 주소 → 버튼으로 (긴 주소를 로그에 그대로 보이지 않는다)
+      r.lines = r.lines.filter(l => {
+        const m = l.match(/LOGIN_URL (https:\/\/\S+)/);
+        if (!m) return true;
+        $("#loginLink").href = m[1]; $("#loginBar").style.display = "block";
+        return false;
+      });
+      const el = $("#log");
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+      el.textContent += r.lines.join("\n") + "\n";
+      if (atBottom) el.scrollTop = el.scrollHeight;     // 위로 올려 읽는 중이면 끌어내리지 않는다
+    }
+    const st = $("#logst");
+    st.textContent = r.busy ? `⏳ ${r.label} 하는 중…` : r.code == null ? "대기 중"
+      : r.code === 0 ? "✓ 다 됐어요" : r.code === -1 ? "■ 멈춤" : "✗ 중간에 멈췄어요";
+    st.className = r.busy ? "run" : r.code === 0 ? "ok" : r.code > 0 ? "bad" : "";
+    if (wasBusy && !r.busy) { refresh(); checkClaude(); checkTools(); $("#loginBar").style.display = "none" }
+    wasBusy = r.busy;
+  }
+}
+setInterval(pollLog, 1000);
+
+// 로그 창 높이 — 손잡이를 위로 끌어 늘린다. 높이는 이 PC 에 기억, 더블클릭은 크게/작게
+const setLogH = h => {
+  h = Math.max(90, Math.min(Math.round(innerHeight * 0.85), h));
+  document.documentElement.style.setProperty("--logh", h + "px");
+  return h;
+};
+(() => {
+  setLogH(+LS.get("logh", 180));
+  let drag = null; const g = $("#grip");
+  g.addEventListener("pointerdown", e => { drag = {y: e.clientY, h: $("#logbox").offsetHeight}; g.setPointerCapture(e.pointerId) });
+  g.addEventListener("pointermove", e => { if (drag) setLogH(drag.h + (drag.y - e.clientY)) });
+  g.addEventListener("pointerup", () => { if (drag) { LS.set("logh", $("#logbox").offsetHeight); drag = null } });
+  g.addEventListener("dblclick", () => LS.set("logh", setLogH($("#logbox").offsetHeight > innerHeight * 0.5 ? 180 : innerHeight)));
+})();
+
+// ── 쇼츠 목록 ──
+async function viewPosts() {
+  if (!S.job) { $("#main").innerHTML = `<div class="empty">「＋원고」로 원고(.docx) 폴더를 지정하거나 파일을 선택하세요.</div>`; return }
+  const r = await api(`/api/jobs/${S.job}/shorts`);
+  const items = r.shorts;
+  const left = items.filter(i => i.status !== "posted" && i.status !== "scheduled").length;
+  $("#main").innerHTML = `
+    <div class="bar">
+      <button class="pri" id="bMake" title="대본→목소리→그림→모션→영상">딸깍 만들기</button>
+      <button id="bScript" title="대본만 먼저 써서 확인">대본만 먼저</button>
+      <button id="bTry" title="쇼츠 한 편의 그림만 먼저 그려 톤 확인">그림 한 편만 먼저</button>
+    </div>
+    <p class="note">원고 ${r.docs.map(d => esc(d.prefix)).join(", ") || "없음"} · 스타일 <b>${esc(r.style)}</b> · 목소리 <b>${esc(r.voice)}</b><br>
+      쇼츠 ${items.length}편 · 남음 ${left} · 다시 눌러도 이미 된 건 건너뛰어요.</p>
+    ${items.length ? items.map(i => `
+      <div class="item" data-id="${esc(i.id)}">
+        <div class="thumb" style="${i.thumb ? `background-image:url(${i.thumb}?t=${Date.now()})` : ""}"></div>
+        <div><div class="t">${esc(i.id)} · ${esc(i.perspective)}</div>
+          <div class="h">${esc(i.hook.line1 || "")}</div>
+          <div class="steps">${chip("목소리", i.steps.audio)}${chip("그림 " + i.steps.images, i.steps.images.split("/")[0] === i.steps.images.split("/")[1] && i.steps.images !== "0/0")}${chip("모션", i.steps.motion)}${chip("영상", i.steps.video)}</div></div>
+        <span class="tag ${i.status}">${STATUS[i.status]}${i.scheduled?.when && i.status === "scheduled" ? " " + i.scheduled.when.slice(5) : ""}</span>
+      </div>`).join("") : `<div class="empty">아직 대본이 없어요 — 「딸깍 만들기」 또는 「대본만 먼저」</div>`}`;
+  $("#bMake").onclick = () => run(["make", "--job", S.job], "전체를 만듭니다 (Claude 사용량 사용, 한 편에 10~15분쯤). 진행할까요?");
+  $("#bScript").onclick = () => run(["s1-script", "--job", S.job]);
+  $("#bTry").onclick = () => run(["s3-images", "--job", S.job, "--limit", "1"]);
+  document.querySelectorAll(".item").forEach(el => el.onclick = () => openDetail(el.dataset.id));
+}
+const chip = (t, ok) => `<span class="chip ${ok ? "ok" : ""}">${ok ? "✓" : "·"} ${esc(t)}</span>`;
+
+// ── 쇼츠 하나 ──
+function field(label, id, val, rows = 2, max = 0) {
+  return `<label class="f">${label}${max ? `<span class="count" data-for="${id}" data-max="${max}"></span>` : ""}</label>
+          <textarea id="${id}" rows="${rows}">${esc(val)}</textarea>`;
+}
+async function openDetail(id) {
+  S.detail = id; const d = await api(`/api/jobs/${S.job}/shorts/${id}`); const p = d.short || {};
+  const st = d.state || {}; const sc = st.scheduled || {}; const yt = p.youtube || {};
+  const acc = $("#acc").value;
+  $("#main").innerHTML = `
+    <button class="back" id="bBack">← 목록</button>
+    <h3 style="margin:6px 0 2px;color:var(--ink)">${esc(id)} · ${esc(p.perspective)}</h3>
+    <p class="note" style="margin:0 0 8px">${esc(p.unit || "")} ${d.duration ? "· " + d.duration.toFixed(1) + "초" : ""}</p>
+    ${d.video ? `<video class="vid" src="${d.video}" controls playsinline></video>`
+              : `<div class="empty">영상이 아직 없습니다 — 「딸깍 만들기」</div>`}
+    <div class="bar" style="margin-top:8px">
+      ${d.motion ? `<a class="btnlike" href="${d.motion}" target="_blank" title="새 창에서 열고 화면을 클릭하면 음성과 함께 재생">모션 미리보기 ↗</a>` : ""}
+      <button id="bRemake" title="바뀐 것만 다시 (대본 고쳤으면 목소리·모션·영상)">바뀐 것만 다시 만들기</button>
+    </div>
+    ${d.motion_problems.length ? `<p class="note" style="color:var(--warn)">△ 모션 점검: ${esc(d.motion_problems[0])}</p>` : ""}
+
+    <details open><summary>대본 고치기</summary>
+      ${field("후크 1줄 (화면 맨 위)", "hk1", p.hook?.line1, 1, 15)}
+      ${field("후크 2줄", "hk2", p.hook?.line2, 1, 18)}
+      ${(p.lines || []).map((ln, k) => `<div class="line">
+        ${field(`문장 ${k + 1} · 자막`, `lt${k}`, ln.text, 2)}
+        ${field("읽는 소리 (숫자·영어는 한글로)", `ls${k}`, ln.say, 2)}
+        ${field("키워드 (쉼표로)", `lk${k}`, (ln.keywords || []).join(", "), 1)}
+        ${field("화면 연출 메모", `lv${k}`, ln.visual, 2)}</div>`).join("")}
+      ${field("모션 수정 요청 (Claude 에게 — 예: 3번 문장에서 지도를 더 크게, 마지막에 개념 이름을 형광펜으로)", "mnote", p.motion_note, 3)}
+      <div class="bar" style="margin-top:8px">
+        <button class="pri" id="bSave">저장 + 다시 만들기</button>
+        <button id="bSaveOnly">저장만</button>
+        ${d.overridden ? `<button id="bReset" title="손편집을 버리고 Claude 원안으로">원안으로</button>` : ""}
+      </div>
+    </details>
+
+    <details><summary>그림 ${d.images.filter(i => i.has).length}/${d.images.length}</summary>
+      <div class="imgs">${d.images.map(im => `<div class="im">
+        <div class="ph ${im.role}" style="${im.has ? `background-image:url(${im.url}?t=${Date.now()})` : ""}"></div>
+        <div class="note"><b>${esc(im.file.slice(0, 2))}</b> ${esc(im.role)} · ${esc(im.subject)}</div>
+        <div class="row"><button data-copy="${esc(im.file)}">설명 복사</button>
+          <label class="btnlike"><input type="file" accept="image/*" data-up="${esc(im.file)}" hidden>넣기</label></div></div>`).join("")}</div>
+      <div class="bar" style="margin-top:8px"><button id="bReimg" title="이 쇼츠 그림을 Claude 가 전부 새로 그림 (직접 넣은 그림은 유지)">그림 전부 다시 그리기</button></div>
+    </details>
+
+    <details><summary>다시 만들기 (단계별)</summary>
+      <div class="bar" style="margin-top:8px">
+        <button data-st="s2-tts">목소리 다시</button>
+        <button data-st="s4-motion">모션 다시 (Claude)</button>
+        <button data-st="s5-render">영상만 다시 굽기</button>
+        <button data-st="s1-script" title="이 쇼츠가 속한 절 전체 대본을 새로 씀 — 손편집은 남음">대본 새로 (절 전체)</button>
+      </div>
+      <p class="note">모션·영상을 다시 하면 그 뒤 단계도 이어서 해 주세요 (모션 다시 → 영상만 다시 굽기).</p>
+    </details>
+
+    <details><summary>유튜브 제목·설명</summary>
+      ${field("제목 (#shorts 는 자동으로 붙어요)", "ytT", yt.title, 2, 90)}
+      ${field("설명", "ytD", yt.description, 4)}
+      ${field("해시태그 (쉼표로, # 없이)", "ytH", (yt.hashtags || []).join(", "), 2)}
+      <div class="bar" style="margin-top:8px"><button id="bSaveYt">저장</button></div>
+      <p class="note">올라갈 모습: <b>${esc(d.upload.title)}</b></p>
+    </details>
+
+    <div class="sec">
+      <b style="color:var(--a)">올리기</b> <span class="note">계정: ${esc(acc || "없음")}</span>
+      ${st.posted ? `<p>✓ ${st.posted.visibility === "scheduled" ? "예약 공개로 올림" : "올림"} ${esc((st.posted.at || "").replace("T", " "))} ${st.posted.url ? `<a href="${esc(st.posted.url)}" target="_blank">열기</a>` : ""}</p>` : ""}
+      ${st.error ? `<p style="color:var(--bad)">✗ ${esc(st.error)}</p>` : ""}
+      <div class="row" style="margin-bottom:6px">
+        <select id="vis" style="flex:1"><option value="public">공개</option><option value="unlisted">일부 공개</option><option value="private">비공개</option></select>
+        <button id="bDry" title="왼쪽 Studio 창에 파일·제목·설명을 채워 두고 멈춤">미리 채워 보기</button>
+        <button class="hot" id="bNow">지금 올리기</button>
+      </div>
+      <div class="row">
+        <input type="datetime-local" id="when" value="${esc(sc.when ? sc.when.replace(" ", "T") : d.next_slot)}" style="flex:1">
+        ${sc.when ? `<button id="bUnsched">예약 취소</button>` : `<button id="bSched">예약</button>`}
+      </div>
+      ${sc.when ? `<p class="note">⏰ ${esc(sc.when)} · ${sc.mode === "native" ? "YouTube 예약 공개로 올라가 있음" : "예약됨 (검은 창이 켜져 있으면 패널을 닫아도 올라가요)"}</p>`
+                : `<p class="note">${S.state.native ? "지금 업로드하고, 정한 시각에 YouTube 가 공개해요 (PC 꺼져도 됨)." : "정한 시간이 되면 왼쪽 창으로 올려요. 검은 창은 켜 두세요."}</p>`}
+    </div>`;
+  $("#bBack").onclick = () => { S.detail = null; refresh() };
+  const counts = () => document.querySelectorAll(".count").forEach(c => {
+    const n = [...$("#" + c.dataset.for).value].length, m = +c.dataset.max;
+    c.textContent = `${n} / ${m}`; c.classList.toggle("over", n > m);
+  });
+  document.querySelectorAll("textarea").forEach(t => t.oninput = counts); counts();
+  const v = k => $("#" + k)?.value ?? "";
+  const split = s => s.split(/[,\n]/).map(x => x.trim().replace(/^#/, "")).filter(Boolean);
+  const scriptPatch = () => ({hook: {line1: v("hk1"), line2: v("hk2")}, motion_note: v("mnote"),
+    lines: (p.lines || []).map((_, k) => ({text: v(`lt${k}`), say: v(`ls${k}`), keywords: split(v(`lk${k}`)), visual: v(`lv${k}`)}))});
+  const save = async (patch, then) => { await api(`/api/jobs/${S.job}/shorts/${id}`, {method: "PUT", body: {patch, then}}); pollLog(); };
+  $("#bSave").onclick = () => save(scriptPatch(), ["make"]);
+  $("#bSaveOnly").onclick = async () => { await save(scriptPatch(), []); openDetail(id) };
+  $("#bSaveYt").onclick = async () => { await save({youtube: {title: v("ytT"), description: v("ytD"), hashtags: split(v("ytH"))}}, []); openDetail(id) };
+  $("#bReset") && ($("#bReset").onclick = async () => { if (confirm("손편집을 버릴까요?")) { await api(`/api/jobs/${S.job}/shorts/${id}/override`, {method: "DELETE"}); openDetail(id) } });
+  $("#bRemake").onclick = () => run(["make", "--job", S.job, "--only", id]);
+  $("#bReimg").onclick = () => run(["s3-images", "--job", S.job, "--only", id, "--force"], "이 쇼츠의 그림을 Claude 가 새로 그립니다(직접 넣은 그림은 유지). 진행할까요?");
+  document.querySelectorAll("[data-st]").forEach(b => b.onclick = () => run([b.dataset.st, "--job", S.job, "--only", id, "--force"]));
+  document.querySelectorAll("[data-copy]").forEach(btn => btn.onclick = async () => {
+    const it = d.images.find(x => x.file === btn.dataset.copy);
+    const text = `이미지를 1장 생성해 주세요 (${it.size}${it.role === "sticker" ? ", 투명 배경 PNG" : ""}). 글자는 넣지 마세요.\n\n${it.prompt}`;
+    try { await navigator.clipboard.writeText(text); btn.textContent = "복사됨 ✓" } catch { prompt("복사하세요", text) }
+  });
+  document.querySelectorAll("[data-up]").forEach(inp => inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return; const rd = new FileReader();
+    rd.onload = async () => { await api(`/api/jobs/${S.job}/images/${id}/${inp.dataset.up}`, {method: "POST", body: {data_url: rd.result}}); openDetail(id) };
+    rd.readAsDataURL(f);
+  });
+  const need = () => { if (!acc) { alert("계정을 먼저 추가하세요"); return false } if (!d.video) { alert("영상이 아직 없어요"); return false } return true };
+  const showLog = () => { if ($("#logbox").offsetHeight < 300) setLogH(320) };
+  $("#bDry").onclick = () => need() && (showLog(), 1) && run(["post", "--job", S.job, "--only", id, "--account", acc, "--dry-run"]);
+  $("#bNow").onclick = () => need() && (showLog(), 1) && run(["post", "--job", S.job, "--only", id, "--account", acc, "--visibility", v("vis")],
+    `「${id} ${p.perspective}」을(를) ${acc} 채널에 지금 올립니다 (${$("#vis").selectedOptions[0].textContent}).`);
+  $("#bSched") && ($("#bSched").onclick = async () => {
+    if (!need()) return;
+    const r = await api("/api/schedule", {method: "POST", body: {job: S.job, data_id: id, when: v("when").replace("T", " "), account: acc, native: S.state.native}});
+    if (r.mode === "native") { showLog(); pollLog() } openDetail(id);
+  });
+  $("#bUnsched") && ($("#bUnsched").onclick = async () => { await api(`/api/schedule/${S.job}/${id}`, {method: "DELETE"}); openDetail(id) });
+}
+
+// ── 예약 탭 ──
+async function viewSched() {
+  const rows = await api("/api/schedule");
+  const acc = $("#acc").value;
+  $("#main").innerHTML = `
+    <div class="bar"><button class="pri" id="bPlan">남은 것 자동 배치</button>
+      <span class="note">슬롯 ${S.state.slots.join(" · ")} (하루 ${S.state.slots.length}회)</span></div>
+    <div id="planBox"></div>
+    ${rows.length ? rows.map(r => `<div class="sched"><span class="w">${esc(r.when.slice(5))}</span>
+        <div><div>${esc(r.title)}</div><div class="note">${esc(r.job)} · ${esc(r.account || "")} ${r.error ? `<span style="color:var(--bad)">✗ ${esc(r.error)}</span>` : ""}</div></div>
+        <span class="tag ${r.mode === "native" ? "scheduled" : r.posted ? "posted" : "scheduled"}">${r.mode === "native" ? "YouTube 예약" : r.posted ? "올림" : "예약"}</span></div>`).join("")
+      : `<div class="empty">예약이 없습니다.</div>`}`;
+  $("#bPlan").onclick = async () => {
+    if (!acc || !S.job) return alert("계정과 원고를 고르세요");
+    const plan = await api("/api/plan", {method: "POST", body: {job: S.job, account: acc}});
+    if (!plan.length) return alert("배치할 쇼츠가 없습니다 (영상이 있는 미업로드·미예약만 배치)");
+    $("#planBox").innerHTML = `<details open><summary>제안 ${plan.length}건</summary>
+      ${plan.map(p => `<div class="note">${esc(p.when.slice(5))} · ${esc(p.title)}</div>`).join("")}
+      <div class="bar" style="margin-top:8px"><button class="pri" id="bApply">이대로 예약</button></div></details>`;
+    $("#bApply").onclick = async () => { await api("/api/plan", {method: "POST", body: {job: S.job, account: acc, apply: true}}); pollLog(); viewSched() };
+  };
+}
+
+function viewHelp() {
+  $("#main").innerHTML = `
+  <h3 style="color:var(--a)">처음 한 번</h3>
+  <ol>
+    <li>위 <b>Claude 로그인</b> → 브라우저에서 Claude 구독 계정 승인 (대본·그림·모션 전부)</li>
+    <li>위 <b>＋</b>로 계정 추가 → <b>로그인</b> → 왼쪽 Chrome 에서 Google 로그인, 채널(@dekmanfactory) 선택</li>
+    <li><b>＋원고</b>로 원고 폴더 불러오기 (260711 형식이면 02_ 만)</li>
+  </ol>
+  <h3 style="color:var(--a)">매번</h3>
+  <ol>
+    <li><b>대본만 먼저</b> → 쇼츠를 눌러 문장·후크 확인, 고치면 <b>저장만</b></li>
+    <li><b>딸깍 만들기</b> → 목소리(SuperTonic3) → 그림(Claude SVG) → 모션(Claude) → 영상</li>
+    <li>쇼츠를 눌러 영상 확인. 고칠 점은 「모션 수정 요청」에 적고 <b>저장 + 다시 만들기</b></li>
+    <li><b>미리 채워 보기</b>로 왼쪽 Studio 창 확인 → <b>지금 올리기</b> 또는 <b>예약</b></li>
+  </ol>
+  <h3 style="color:var(--a)">막히면</h3>
+  <ul class="note" style="padding-left:18px">
+    <li>「Claude 로그인이 필요해요」 → 위 「Claude 로그인」 후 같은 버튼</li>
+    <li>「Claude 사용 한도에 걸렸어요」 → 한도가 풀린 뒤 같은 버튼 (이미 된 건 건너뜀)</li>
+    <li>그림이 마음에 안 들면 → 쇼츠 → 그림 → 「넣기」로 직접 만든 그림으로 교체</li>
+    <li>올리기가 멈추면 → <code>logs/post</code> 스크린샷 확인, 담당자는 「업로드 창 기록」으로 셀렉터 점검</li>
+  </ul>
+  <h3 style="color:var(--a)">끄기</h3>
+  <p class="note">이 프로그램의 예약(대기열)을 걸었다면 <b>검은 창은 켜 두세요</b>. YouTube 예약 공개는 PC 를 꺼도 돼요.</p>
+  <div class="bar"><button class="hot" id="bQuit">프로그램 끄기</button></div>
+  <div class="bar"><button id="bDoc">점검하기</button><button id="bAssets">글꼴·GSAP 받기</button><button id="bProbe" title="담당자용 — 업로드 창 구조를 기록해 둡니다">업로드 창 기록(담당자용)</button></div>`;
+  $("#bDoc").onclick = () => run(["doctor"]);
+  $("#bAssets").onclick = () => run(["assets"]);
+  $("#bQuit").onclick = async () => {
+    if (!confirm("aside-shorts 를 끌까요? 걸어 둔 대기열 예약은 다음에 켤 때 이어서 올라가요.")) return;
+    await api("/api/quit", {method: "POST"}).catch(() => {});
+    document.body.innerHTML = '<div class="empty" style="margin:40px 16px">껐어요. 다시 쓰려면 run.bat 을 누르세요.</div>';
+  };
+  $("#bProbe").onclick = () => $("#acc").value && run(["probe", "--account", $("#acc").value]);
+}
+
+function refresh() {
+  if (S.tab === "posts") return S.detail ? openDetail(S.detail) : viewPosts();
+  if (S.tab === "sched") return viewSched();
+  viewHelp();
+}
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+  S.tab = b.dataset.tab; S.detail = null; refresh();
+});
+$("#job").onchange = e => { S.job = e.target.value; LS.set("job", S.job); S.detail = null; refresh() };
+$("#acc").onchange = async e => { await api(`/api/accounts/${e.target.value}/use`, {method: "POST"}); checkLogin(); if (S.detail) openDetail(S.detail) };
+$("#btnLogin").onclick = async () => { const a = $("#acc").value; if (!a) return $("#dlgAcc").showModal();
+  await api(`/api/accounts/${a}/login`, {method: "POST"}); setTimeout(checkLogin, 4000) };
+$("#btnAddAcc").onclick = () => $("#dlgAcc").showModal();
+$("#dlgAcc").onclose = async () => { if ($("#dlgAcc").returnValue !== "ok") return;
+  await api("/api/accounts", {method: "POST", body: {name: $("#accName").value.trim(), label: $("#accLabel").value.trim()}});
+  await loadState(); };
+let PICK = null;     // {mode: "folder"|"files", folder, files[]}
+const base = p => p.split(/[\\/]/).filter(Boolean).pop() || "";
+$("#btnNewJob").onclick = () => {
+  PICK = null; $("#jobOk").disabled = true;
+  $("#pickInfo").textContent = "폴더를 지정하면 안의 HTML 전부, 파일을 선택하면 고른 것만 들어갑니다.";
+  $("#dlgJob").showModal();
+};
+async function doPick(kind) {
+  $("#pickInfo").textContent = "선택 창을 띄웠습니다 — 안 보이면 작업 표시줄(Mac 은 Dock)에서 찾아 고르세요 …";
+  let r = await fetch("/api/pick", {method: "POST", headers: {"Content-Type": "application/json"},
+                                    body: JSON.stringify({kind})}).then(x => x.ok ? x.json() : {_err: x.status}).catch(() => ({_err: 0}));
+  if (r._err) {      // 선택 창을 못 띄우는 PC — 폴더 경로를 직접 받는다
+    const path = prompt("선택 창을 띄우지 못했습니다. 원고 폴더 경로를 붙여 넣으세요:");
+    r = path ? await api("/api/pick", {method: "POST", body: {kind: "folder", path}}).catch(() => null) : null;
+    kind = "folder";
+  }
+  if (!r || !r.files?.length) {
+    PICK = null; $("#jobOk").disabled = true;
+    $("#pickInfo").textContent = r?.folder ? `이 폴더에 원고(.docx)가 없습니다: ${r.folder}` : "선택을 취소했습니다.";
+    return;
+  }
+  PICK = {mode: kind, folder: r.folder || "", files: r.files};
+  const names = r.files.map(base);
+  $("#pickInfo").innerHTML = (kind === "folder" ? `📁 <b>${esc(r.folder)}</b><br>` : "") +
+    `원고 <b>${r.files.length}개</b> — ${esc(names.slice(0, 4).join(", "))}${names.length > 4 ? " …" : ""}`;
+  if (!$("#jobName").value.trim()) {
+    const guess = (kind === "folder" ? base(r.folder) : names[0].replace(/\.(docx|txt|md)$/i, "")).replace(/[^A-Za-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
+    $("#jobName").value = guess || "job1";
+  }
+  $("#jobOk").disabled = false;
+}
+$("#pickFolder").onclick = () => doPick("folder");
+$("#pickFiles").onclick = () => doPick("files");
+$("#dlgJob").onclose = async () => { if ($("#dlgJob").returnValue !== "ok" || !PICK) return;
+  const name = $("#jobName").value.trim();
+  await api("/api/jobs", {method: "POST", body: {name,
+    ...(PICK.mode === "folder" ? {src: PICK.folder} : {files: PICK.files}),
+    title: $("#jobTitle").value.trim(), style: $("#jobStyle").value, voice: $("#jobVoice").value}});
+  S.job = name; LS.set("job", S.job); await loadState(); refresh(); };
+$("#btnDelJob").onclick = async () => {
+  if (!S.job) return;
+  const t = $("#job").selectedOptions[0]?.textContent || S.job;
+  if (!confirm(`「${t}」 작업을 지웁니다.
+복사본·대본·음성·그림·모션·영상·업로드 기록이 모두 사라집니다 (원본 원고 폴더는 그대로).`)) return;
+  await api(`/api/jobs/${S.job}`, {method: "DELETE"});
+  S.job = ""; S.detail = null; await loadState(); refresh();
+};
+$("#btnArrange").onclick = async () => { const r = await api("/api/arrange", {method: "POST", body: {account: $("#acc").value || ""}}); if (!r.done.length) alert("정렬할 창이 없습니다 — YouTube 창은 「로그인」으로 띄우세요") };
+$("#btnClaude").onclick = async () => {
+  const again = $("#btnClaude").textContent === "다른 계정";
+  if (again && !confirm("다른 Claude 계정으로 바꿀까요? 브라우저에서 새로 로그인하게 됩니다.")) return;
+  setLogH(Math.max($("#logbox").offsetHeight, 240));
+  run(["claude-login"]);
+};
+$("#loginClose").onclick = () => { $("#loginBar").style.display = "none" };
+$("#btnStop").onclick = () => api("/api/stop", {method: "POST"});
+$("#btnClr").onclick = () => { $("#log").textContent = "" };
+$("#zoom").onclick = () => $("#zoom").close();
+setInterval(checkLogin, 20000);
+
+loadState().then(refresh); pollLog(); checkClaude(); checkTools(); setInterval(checkClaude, 30000);
+</script>
+</body>
+</html>

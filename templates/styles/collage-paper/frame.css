@@ -1,0 +1,12 @@
+/* collage-paper — 수채화 배경, 흰 종이 띠, 손글씨 */
+:root { --bg: #f4ecdc; --ink: #2b241c; --accent: #e4572e; --green: #3f7d4e;
+        --tape1: #f1d98a; --tape2: #b9e3e0; --tape3: #f5b8c6; }
+#frame { background: var(--bg); }
+
+#hook { background: #fffaf0; height: 300px; box-shadow: 0 10px 0 -2px rgba(0,0,0,.06);
+        clip-path: polygon(0 0,100% 0,100% 92%,96% 96%,91% 91%,85% 97%,79% 92%,72% 98%,66% 93%,59% 97%,52% 92%,46% 98%,39% 93%,33% 97%,26% 92%,20% 98%,13% 93%,7% 97%,0 92%); }
+#hook .l1 { color: var(--ink); font-size: 76px; }
+#hook .l2 { color: var(--accent); font-family: "Nanum Pen Script", "Pretendard"; font-weight: 400; font-size: 66px; }
+
+.cap span { color: var(--ink); background: rgba(255,250,240,.94); box-shadow: 0 6px 0 rgba(0,0,0,.12); }
+.cap .kw { color: var(--accent); }

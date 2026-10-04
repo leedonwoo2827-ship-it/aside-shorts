@@ -1,0 +1,10 @@
+{
+  "name": "collage-paper",
+  "label": "찢어진 종이 콜라주 (수채화 · 스티커 · 손글씨 테이프)",
+  "image": {
+    "sticker": "warm detailed watercolor and colored-pencil storybook illustration, soft textures, gentle warm palette",
+    "background": "warm painterly watercolor storybook landscape, soft golden light, rich but calm details",
+    "diagram": "hand-drawn ink and watercolor explanatory illustration on cream sketchbook paper"
+  },
+  "svg": "따뜻한 수채화 그림책 일러스트. 팔레트: 크림 #f4ecdc · 갈색 #8a5a3b · 주황 #e8a25a · 초록 #6f9a62 · 하늘 #9cc7d8 · 빨강 #e4572e. feTurbulence+feDisplacementMap 으로 번지는 수채 가장자리, 부드러운 그라데이션, 갈색 연필 외곽선(4~6px, 살짝 거칠게)."
+}
