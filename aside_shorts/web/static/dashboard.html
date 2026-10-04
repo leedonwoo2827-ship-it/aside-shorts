@@ -77,6 +77,7 @@ summary{cursor:pointer;font-weight:700;color:var(--pri)}
 #logbox button{background:#334155;border:1px solid #475569;color:#fff;border-radius:6px;padding:1px 9px;font-size:11.5px;cursor:pointer}
 #loginBar{position:fixed;right:20px;bottom:calc(var(--logh,170px) + 12px);z-index:30;background:#FFF7E0;border:1px solid #F2D27A;border-radius:12px;padding:10px 14px;box-shadow:0 6px 18px rgba(30,41,59,.18)}
 .empty{padding:28px 10px;text-align:center;color:var(--sub);border:1px dashed var(--line);border-radius:12px}
+.ytp{border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-top:8px;background:#fff}.ytp pre{white-space:pre-wrap;margin:6px 0 0;font:inherit;font-size:13px;line-height:1.5}
 code{background:#f1ede4;border-radius:4px;padding:1px 5px}
 </style>
 </head>
@@ -398,9 +399,7 @@ async function viewView() {
     ${field("모션 수정 요청 (Claude 에게)", "mnote", p.motion_note, 3)}
     <div class="row" style="margin-top:10px"><button class="b p" id="bSave">저장 + 다시 만들기</button><button class="b" id="bSaveOnly">저장만</button>
       ${d.overridden ? `<button class="b" id="bReset">원안으로</button>` : ""}</div>
-    <details><summary>유튜브 제목·설명·해시태그</summary>
-      ${field("제목 (#shorts 자동)", "ytT", yt.title, 2, 90)}${field("설명", "ytD", yt.description, 4)}${field("해시태그(쉼표, # 없이)", "ytH", (yt.hashtags || []).join(", "), 2)}
-      <div class="row" style="margin-top:8px"><button class="b" id="bSaveYt">저장</button><span class="mini">올라갈 제목: <b>${esc(d.upload.title)}</b></span></div></details>
+    ${ytBlock(d)}
     ${d.state.posted ? `<p class="ok">✓ 올림 ${esc((d.state.posted.at || "").replace("T", " "))} ${d.state.posted.url ? `<a href="${esc(d.state.posted.url)}" target="_blank">열기</a>` : ""}</p>` : ""}`;
   document.querySelectorAll("[data-mt]").forEach(b => b.onclick = () => { LS.set("mediaTab", b.dataset.mt); viewView() });
   const counts = () => document.querySelectorAll(".count").forEach(c => { const n = [...$("#" + c.dataset.for).value].length, m = +c.dataset.max; c.textContent = `${n} / ${m}`; c.classList.toggle("over", n > m) });
@@ -411,7 +410,7 @@ async function viewView() {
   const save = async (pt, then) => { await api(`/api/jobs/${S.job}/shorts/${id}`, {method: "PUT", body: {patch: pt, then}}); pollLog() };
   $("#bSave").onclick = () => save(patch(), ["make"]);
   $("#bSaveOnly").onclick = async () => { await save(patch(), []); viewView() };
-  $("#bSaveYt").onclick = async () => { await save({youtube: {title: v("ytT"), description: v("ytD"), hashtags: split(v("ytH"))}}, []); viewView() };
+  wireYt(d, id, save, viewView);
   $("#bReset") && ($("#bReset").onclick = async () => { if (confirm("손편집을 버릴까요?")) { await api(`/api/jobs/${S.job}/shorts/${id}/override`, {method: "DELETE"}); viewView() } });
   $("#bRemake").onclick = () => run(["make", "--job", S.job, "--only", id]);
   $("#bReimg").onclick = () => run(["s3-images", "--job", S.job, "--only", id, "--force"], "이 쇼츠의 그림을 Claude 가 새로 그립니다(직접 넣은 그림은 유지). 진행할까요?");
@@ -422,6 +421,45 @@ async function viewView() {
     try { await navigator.clipboard.writeText(text); btn.textContent = "복사됨 ✓" } catch { prompt("복사하세요", text) } });
   document.querySelectorAll("[data-up]").forEach(inp => inp.onchange = () => { const f = inp.files[0]; if (!f) return; const rd = new FileReader();
     rd.onload = async () => { await api(`/api/jobs/${S.job}/images/${id}/${inp.dataset.up}`, {method: "POST", body: {data_url: rd.result}}); viewView() }; rd.readAsDataURL(f) });
+}
+
+
+// ── 유튜브 올릴 문구 (@dekmanfactory 형식 — youtube.meta 가 조립한 그대로) ──
+function ytBlock(d) {
+  const yt = d.short.youtube || {}, u = d.upload || {}, ck = d.yt_check;
+  const legacyHook = (yt.description || "").split("\n").map(s => s.trim()).filter(Boolean).slice(0, 2);
+  const arr = x => (x || []).join(", ");
+  const pre = (lab, key, val) => `<div class="ytp"><div class="row" style="justify-content:space-between"><b>${lab}</b>
+      <button class="b s" data-ycopy="${key}">복사</button></div><pre>${esc(val || "—")}</pre></div>`;
+  return `<details open><summary>유튜브 올릴 문구</summary>
+    ${ck ? `<p class="mini">${ck.passed ? '<span class="ok">✓ 원고와 겹침 검사 통과</span>' : '<span class="warn">△ ' + esc((ck.problems || []).join(" / ")) + "</span>"}
+      ${yt.summary_from ? " · 설명 본문 = 개작본(02) 소제목 글" : ""}</p>` : ""}
+    ${pre("제목", "title", u.title)}${pre("설명", "description", u.description)}${pre("태그", "tags", (u.tags || []).join(", "))}${pre("고정 댓글", "pinned_comment", u.pinned_comment)}
+    <details><summary>고치기</summary>
+      ${field("제목 후크 (#shorts·해시태그는 자동)", "ytT", yt.title, 1, 40)}
+      ${field("제목 뒤 해시태그 (쉼표, # 없이)", "ytTT", arr(yt.title_tags || yt.hashtags), 2)}
+      ${field("설명 후크 2줄 (한 줄에 하나)", "ytHL", (yt.hook_lines || legacyHook).join("\n"), 2)}
+      ${field("설명 해시태그 4~5개", "ytDT", arr(yt.desc_tags), 1)}
+      ${field("소제목 (예: (2) 공간적 관점)", "ytSL", yt.section_label || "", 1)}
+      ${field("개념 설명 (문단마다 한 줄)", "ytSM", (yt.summary || []).join("\n"), 6)}
+      ${field("태그 칸 (쉼표)", "ytTG", arr(yt.tags), 2)}
+      ${field("고정 댓글", "ytPC", yt.pinned_comment || "", 2)}
+      <div class="row" style="margin-top:8px"><button class="b" id="bSaveYt">저장</button>
+        <button class="b" id="bReYt" title="Claude 가 제목·해시태그·설명·태그·고정 댓글을 새로 씀(손편집은 유지)">유튜브 문구 다시 쓰기</button></div>
+    </details></details>`;
+}
+function wireYt(d, id, save, reload) {
+  const v = k => document.getElementById(k)?.value ?? "";
+  const list = s => s.split(/[,\n]/).map(x => x.trim().replace(/^#/, "")).filter(Boolean);
+  const lines = s => s.split("\n").map(x => x.trim()).filter(Boolean);
+  document.querySelectorAll("[data-ycopy]").forEach(b => b.onclick = async () => {
+    const k = b.dataset.ycopy, val = k === "tags" ? (d.upload.tags || []).join(", ") : (d.upload[k] || "");
+    try { await navigator.clipboard.writeText(val); b.textContent = "복사됨 ✓" } catch { prompt("복사하세요", val) } });
+  const sv = document.getElementById("bSaveYt");
+  if (sv) sv.onclick = async () => { await save({youtube: {title: v("ytT"), title_tags: list(v("ytTT")), hook_lines: lines(v("ytHL")),
+    desc_tags: list(v("ytDT")), section_label: v("ytSL").trim(), summary: lines(v("ytSM")), tags: list(v("ytTG")), pinned_comment: v("ytPC").trim()}}, []); reload() };
+  const re = document.getElementById("bReYt");
+  if (re) re.onclick = () => run(["yt-meta", "--job", S.job, "--only", id, "--force"]);
 }
 
 // ── 새 작업·원고 ──

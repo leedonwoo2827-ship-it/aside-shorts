@@ -21,7 +21,7 @@ SCHEMA: Dict[str, Any] = {
     "required": ["unit_title", "unit_topic", "shorts"],
     "properties": {"unit_title": _STR, "unit_topic": _STR, "shorts": {"type": "array", "minItems": 1, "items": {
         "type": "object",
-        "required": ["perspective", "hook", "lines", "images", "youtube"],
+        "required": ["perspective", "hook", "lines", "images"],
         "properties": {
             "perspective": _STR,
             "hook": {"type": "object", "required": ["line1", "line2"],
@@ -34,9 +34,6 @@ SCHEMA: Dict[str, Any] = {
                 "type": "object", "required": ["key", "role", "subject", "prompt"],
                 "properties": {"key": _STR, "role": {"type": "string", "enum": ["sticker", "background", "diagram"]},
                                "subject": _STR, "prompt": _STR}}},
-            "youtube": {"type": "object", "required": ["title", "description", "hashtags"],
-                        "properties": {"title": _STR, "description": _STR,
-                                       "hashtags": {"type": "array", "items": _STR}}},
         }}}},
 }
 
@@ -69,9 +66,20 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
             log(f"「{u.section or u.name}」 대본은 이미 있어요 ({len(have)}편).")
             continue
         log(f"「{u.section or u.name}」 개작본으로 쇼츠 대본을 쓰는 중이에요 (1~3분) …")
-
-        head = f"[교과] {job.get('title', '')}\n[단원] {u.chapter} / {u.section}\n\n[원고]\n"
-        res = claude_cli.structured(head + u.text, system_prompt(), SCHEMA, model=model)
+        from .s0_rewrite import load_sections
+        secs = (load_sections(u) or {}).get("sections") or []
+        head = f"[교과] {job.get('title', '')}\n[단원] {u.chapter} / {u.section}\n\n"
+        if secs:        # 새 개작 형식 — 소제목 하나 = 쇼츠 한 편(분기 규칙 대신 이 목록을 따른다)
+            body = "\n\n".join(f"{s['label']} {s.get('title', '')}\n" + "\n".join(s.get("paragraphs") or []) for s in secs)
+            head += (f"[쇼츠 구성 — 아래 소제목 {len(secs)}개마다 정확히 한 편, 같은 순서로. 각 편은 그 소제목의 글만 재료로 쓴다]\n"
+                     + "\n".join(f"{s['label']} {s.get('title', '')}" for s in secs) + "\n\n[원고]\n")
+            res = claude_cli.structured(head + body, system_prompt(), SCHEMA, model=model)
+            if len(res.get("shorts") or []) != len(secs):
+                log(f"  편 수({len(res.get('shorts') or [])})가 소제목 수({len(secs)})와 달라 다시 맡겨요 …")
+                res = claude_cli.structured(head + body + f"\n\n[주의] shorts 는 정확히 {len(secs)}개.",
+                                            system_prompt(), SCHEMA, model=model)
+        else:           # 예전 개작본(소제목 구조 없음) — 분기 규칙대로
+            res = claude_cli.structured(head + "[원고]\n" + u.text, system_prompt(), SCHEMA, model=model)
         shorts: List[Dict[str, Any]] = res.get("shorts") or []
         if not shorts:
             raise SystemExit("대본이 비어서 왔어요. 같은 버튼을 한 번 더 눌러 주세요.")
@@ -83,6 +91,8 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
             title = (res.get("unit_title") or "").strip() or re.sub(r"^\d+절\s*", "", u.section)
             ch = u.chapter if len(u.chapter) > 3 else f"{u.prefix.split('-')[0]}장"
             sh = {"id": sid, "unit": f"{ch} {sec_no}절 {title}".strip(), "unit_topic": res.get("unit_topic", ""), **sh}
+            if secs and n <= len(secs):
+                sh["section"] = {"index": n, "label": secs[n - 1]["label"], "title": secs[n - 1].get("title", "")}
             for ln in sh.get("lines") or []:      # 자막에 없는 키워드는 강조가 안 된다 — 걸러 둔다
                 ln["keywords"] = [k for k in ln.get("keywords") or [] if k and k in ln.get("text", "")]
             for i, im in enumerate(sh.get("images") or [], 1):
@@ -91,3 +101,5 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
             log(f"  ✓ {sid} {sh['perspective']} — {sh['hook']['line1']} (문장 {len(sh['lines'])} · 그림 {len(sh['images'])})")
         log(f"  이 절의 학습 주제: {res.get('unit_topic', '')}")
         config.write_json(u.script_dir / "_s1.json", {"hash": u.hash, "source": u.source.name})
+        from . import ytmeta     # 대본 다음 바로 유튜브 업로드 문구(제목·해시태그·설명·태그·고정 댓글)
+        ytmeta.write_unit(job, u, [f"{u.prefix}-{n:02d}" for n in range(1, len(shorts) + 1)], model=model)

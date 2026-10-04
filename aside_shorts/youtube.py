@@ -47,6 +47,16 @@ SEL: Dict[str, Any] = {
     "video_url": "ytcp-video-info a.ytcp-video-info, .video-url-fadeable a",
     "progress": "ytcp-video-upload-progress .progress-label, ytcp-video-upload-progress",
     "close": "#close-button, ytcp-button#close-button",
+    # 태그 — 세부정보 「자세히 보기」 안
+    "more": "#toggle-button",
+    "tags": "#tags-container input#text-input, ytcp-video-metadata-editor-advanced input[aria-label*='태그'], "
+            "input[aria-label*='Tags'], input[aria-label*='태그']",
+    # 고정 댓글 — 공개된 시청 페이지
+    "c_box": "#simplebox-placeholder, ytd-comment-simplebox-renderer #placeholder-area",
+    "c_input": "#contenteditable-root",
+    "c_submit": "#submit-button",
+    "c_thread": "ytd-comment-thread-renderer",
+    "c_menu": "#action-menu-button",
     "uploaded": re.compile(r"(업로드 완료|Upload complete|확인 완료|Checks complete|처리|Processing|SD|HD|저작권|Copyright)", re.I),
 }
 SESSION_COOKIES = ("SAPISID", "__Secure-3PAPISID", "LOGIN_INFO")
@@ -283,18 +293,53 @@ def status(acc: Dict[str, Any]) -> Dict[str, Any]:
         return {"chrome": True, "logged_in": s.logged_in()}
 
 
-def compose(short: Dict[str, Any]) -> tuple:
-    """(제목, 설명) — 제목 100자, 끝에 #shorts. 설명 = 본문 + 단원 + 해시태그."""
+def _clean_tags(xs) -> list:
+    out = []
+    for t in xs or []:
+        t = re.sub(r"[\s#,<>]+", "", str(t))
+        if t and t.lower() not in ("shorts", "쇼츠") and t not in out:
+            out.append(t)
+    return out
+
+
+def meta(short: Dict[str, Any]) -> Dict[str, Any]:
+    """업로드 문구 — @dekmanfactory 형식 하나로 통일. (자동 업로드·패널 복사 모두 이것만 쓴다)
+
+    제목   「후크 #shorts #태그 … #쇼츠」 (100자 안에서 뒤 태그부터 뺀다)
+    설명   후크 1줄 / 후크 2줄 / #태그 4~5개 #shorts / (빈 줄) / (2) 공간적 관점 / 개념 설명 문단들
+    태그   Studio 태그 칸(쉼표) · 고정 댓글 한 줄
+    예전 대본(youtube.title/description/hashtags 만 있음)도 같은 모양으로 조립한다."""
     yt = short.get("youtube") or {}
-    title = (yt.get("title") or (short.get("hook") or {}).get("line1") or short.get("id", "")).strip()
-    title = re.sub(r"\s*#shorts\s*$", "", title, flags=re.I)[:90].rstrip() + " #shorts"
-    tags = [t.strip().lstrip("#").replace(" ", "") for t in yt.get("hashtags") or [] if t.strip()]
-    desc = (yt.get("description") or "").strip()
-    if short.get("unit"):
-        desc += f"\n\n📘 {short['unit']}"
-    if tags:
-        desc += "\n\n" + " ".join(f"#{t}" for t in tags[:12])
-    return title, desc.replace("<", "").replace(">", "")[:4800]
+    head = (yt.get("title") or (short.get("hook") or {}).get("line1") or short.get("id", "")).strip()
+    head = re.sub(r"\s*#\S+", "", head).strip()          # 제목 칸에 섞여 온 해시태그는 떼고 아래에서 붙인다
+    ttags = _clean_tags(yt.get("title_tags") or yt.get("hashtags"))
+    parts = [head, "#shorts", *[f"#{t}" for t in ttags]]
+    while len(" ".join(parts + ["#쇼츠"])) > 100 and len(parts) > 2:
+        parts.pop()
+    title = " ".join(parts + ["#쇼츠"])[:100]
+
+    hook = [x.strip() for x in yt.get("hook_lines") or [] if x and x.strip()]
+    if not hook and yt.get("description"):
+        hook = [x.strip() for x in str(yt["description"]).splitlines() if x.strip()][:2]
+    dtags = _clean_tags(yt.get("desc_tags") or ttags[:4])[:5]
+    lines = hook[:2] + [" ".join([f"#{t}" for t in dtags] + ["#shorts"])]
+    body = [x.strip() for x in yt.get("summary") or [] if x and x.strip()]
+    label = (yt.get("section_label") or (short.get("section") or {}).get("label") or "").strip()
+    if label or body:
+        lines += ["", *([label] if label else []), *body]
+    desc = "\n".join(lines).replace("<", "").replace(">", "")[:4800]
+
+    tags = _clean_tags(yt.get("tags") or ttags)
+    while len(",".join(tags)) > 480 and tags:              # Studio 태그 칸 500자 제한
+        tags.pop()
+    return {"title": title, "description": desc, "tags": tags,
+            "pinned_comment": (yt.get("pinned_comment") or "").strip()}
+
+
+def compose(short: Dict[str, Any]) -> tuple:
+    """(제목, 설명) — meta() 의 짧은 꼴(예전 호출부 호환)."""
+    m = meta(short)
+    return m["title"], m["description"]
 
 
 def _fill(page, selector: str, text: str) -> None:
@@ -399,13 +444,91 @@ def _click(page, css: str, text=None, *, role: str = "radio", timeout: int = 20_
     raise PostError(f"화면에서 버튼을 찾지 못했어요 ({text.pattern if text is not None else css}): {str(last)[:120]}")
 
 
+TEXT_MORE = re.compile(r"^(자세히 보기|Show more|더보기)$")
+TEXT_PIN = re.compile(r"^(고정|Pin)$")
+
+
+def _fill_tags(s: Session, tags: List[str]) -> bool:
+    """세부정보 「자세히 보기」를 펼쳐 태그 칸에 쉼표로 넣는다. 못 하면 경고만 — 업로드는 계속."""
+    page = s.page
+    try:
+        try:
+            _click(page, SEL["more"], TEXT_MORE, role="button", timeout=8_000)
+            time.sleep(0.8)
+        except PostError:
+            pass                                    # 이미 펼쳐져 있으면 버튼이 없다
+        box = page.locator(SEL["tags"]).first
+        box.wait_for(state="visible", timeout=10_000)
+        box.scroll_into_view_if_needed(timeout=3_000)
+        box.click()
+        page.keyboard.insert_text(", ".join(tags) + ",")
+        time.sleep(0.5)
+        log(f"  · 태그 {len(tags)}개를 넣었어요")
+        return True
+    except Exception as e:      # noqa: BLE001
+        detail(f"  태그 입력 실패: {e}")
+        s.shot("tags-fail")
+        log("  △ 태그 칸을 못 찾아 건너뛰었어요 (Studio 에서 직접 넣을 수 있어요)")
+        return False
+
+
+def _watch_url(url: str) -> str:
+    m = re.search(r"(?:shorts/|v=|youtu\.be/)([A-Za-z0-9_-]{6,})", url or "")
+    return f"https://www.youtube.com/watch?v={m.group(1)}" if m else url
+
+
+def _pin_comment(s: Session, url: str, text: str) -> bool:
+    """공개된 영상에 댓글을 달고 고정한다(새 탭). 못 하면 경고만 — 업로드는 이미 끝났다."""
+    page = s.ctx.new_page()
+    try:
+        log("  ⑨ 고정 댓글을 다는 중")
+        for attempt in range(4):                    # 방금 올린 영상은 댓글 칸이 늦게 열린다
+            page.goto(_watch_url(url), wait_until="domcontentloaded")
+            time.sleep(4)
+            page.mouse.wheel(0, 700)
+            time.sleep(3)
+            if page.locator(SEL["c_box"]).count():
+                break
+            time.sleep(30)
+        page.locator(SEL["c_box"]).first.click(timeout=15_000)
+        page.locator(SEL["c_input"]).first.wait_for(state="visible", timeout=10_000)
+        page.keyboard.insert_text(text)
+        page.locator(SEL["c_submit"]).first.click(timeout=10_000)
+        time.sleep(4)
+        th = page.locator(SEL["c_thread"]).filter(has_text=text[:20]).first
+        th.locator(SEL["c_menu"]).first.click(timeout=10_000)
+        page.get_by_text(TEXT_PIN).first.click(timeout=8_000)
+        time.sleep(1)
+        dlg = page.get_by_role("button", name=TEXT_PIN)
+        if dlg.count():
+            dlg.last.click(timeout=8_000)           # 「이 댓글을 고정할까요?」 확인
+        time.sleep(2)
+        s.shot("pinned")
+        log("  ✓ 고정 댓글을 달았어요")
+        return True
+    except Exception as e:      # noqa: BLE001
+        detail(f"  고정 댓글 실패: {e}")
+        try:
+            page.screenshot(path=str(config.LOGS / "post" / f"{time.strftime('%m%d-%H%M%S')}-pin-fail.png"))
+        except Exception:
+            pass
+        log("  △ 고정 댓글을 못 달았어요 — 패널의 「고정 댓글 복사」로 직접 달아 주세요")
+        return False
+    finally:
+        try:
+            page.close()
+        except Exception:
+            pass
+
+
 def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Optional[datetime] = None,
            visibility: str = "public", dry_run: bool = False) -> Dict[str, Any]:
     """쇼츠 하나 업로드. when 이 있으면 YouTube 예약 공개(그 시각에 공개 — PC 가 꺼져 있어도 된다).
 
     ★ 파일을 넣은 뒤에는 **다시 시도하지 않는다** — 페이지를 다시 열면 같은 영상이 초안으로 하나 더 생기고
       「사이트를 새로고침하시겠습니까?」가 뜬다(2026-10-04 실측). 멈추면 왼쪽 창에서 사람이 이어서 누르면 된다."""
-    title, desc = compose(short)
+    m = meta(short)
+    title, desc = m["title"], m["description"]
     with Session(acc) as s:
         page = s.page
         page.on("dialog", lambda d: d.dismiss())        # 떠나기 확인창은 「취소」 — 올리던 걸 지키기
@@ -422,6 +545,8 @@ def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Opt
             log("  ③ 제목·설명을 쓰는 중")
             _fill(page, SEL["title"], title)
             _fill(page, SEL["desc"], desc)
+            if m["tags"]:
+                _fill_tags(s, m["tags"])
             log("  ④ 「아동용 아님」 고르는 중")
             _click(page, SEL["not_kids"], TEXT["not_kids"], timeout=30_000)
             s.shot("details")
@@ -459,11 +584,17 @@ def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Opt
             page.locator(SEL["close"]).first.click(timeout=10_000)
         except Exception:
             pass
+        pinned = None
+        if m["pinned_comment"]:
+            if when or visibility != "public":
+                log("  · 고정 댓글은 공개된 뒤에 달 수 있어요 — 공개되면 패널의 「고정 댓글 복사」로 달아 주세요.")
+            elif url:
+                pinned = _pin_comment(s, url, m["pinned_comment"])
         log("  ⑧ 끝!")
         detail(f"  uploaded url={url}")
         return {"url": url, "title": title, "at": datetime.now().isoformat(timespec="seconds"),
                 "scheduled_for": when.isoformat(timespec="minutes") if when else None,
-                "visibility": "scheduled" if when else visibility}
+                "visibility": "scheduled" if when else visibility, "pinned": pinned}
 
 
 def probe(acc: Dict[str, Any]) -> Path:

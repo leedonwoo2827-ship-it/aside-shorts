@@ -3,6 +3,7 @@
 만들기
   new <job> --from <원고폴더|.docx> [--files a.docx …] [--rewritten] [--title 통합사회1] [--style vox-retro] [--voice F4]
   make      --job J [--only 1-2-04,…] [--force] [--limit N]   딸깍: 쇼츠마다 s2→s5 (목소리·그림·모션·영상) — 개작·대본은 사람이 확인하고 따로
+  yt-meta   --job J [--only id] [--force]                    유튜브 문구(제목·해시태그·설명·태그·고정 댓글)만 다시 쓰기
   all       --job J [--only 1-2,…]                          밤샘: 단원마다 s0 개작 → s1 대본 → 쇼츠마다 s2→s5 (한 편 실패해도 계속)
   s0-rewrite | s1-script | s2-tts | s3-images | s4-motion | s5-render     (단계별, 옵션 같음)
 올리기 (YouTube Studio)
@@ -355,7 +356,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--style")
     p.add_argument("--voice")
 
-    for name in ["make", "all", *STAGES]:
+    for name in ["make", "all", "yt-meta", *STAGES]:
         p = sub.add_parser(name)
         p.add_argument("--job")
         p.add_argument("--only")
@@ -430,6 +431,9 @@ def _dispatch(a, ap) -> int:
         from .llm.claude_wait import keep_awake
         keep_awake(True)            # 밤새 도는 동안 PC 가 절전에 들어가지 않게
         run_stage(a.cmd, need(a.job), only=_only(a.only), force=a.force, limit=a.limit)
+    elif a.cmd == "yt-meta":
+        from . import ytmeta
+        ytmeta.run(need(a.job), only=_only(a.only), force=a.force)
     elif a.cmd in ("make", "all"):
         from .llm.claude_wait import keep_awake
         keep_awake(True)
