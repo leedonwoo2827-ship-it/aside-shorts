@@ -413,6 +413,10 @@ def _wait_uploaded(s: Session, limit: int = 1800) -> None:
             last = txt
         if txt and not re.search(r"(업로드 중|Uploading|\d+\s*%)", txt) and SEL["uploaded"].search(txt):
             return
+        if not txt and time.time() - t0 > 20 and not _dialog_alive(page):
+            s.shot("dialog-gone")
+            raise PostError("업로드 창이 중간에 닫혔어요 — 영상은 Studio 「콘텐츠」에 비공개 초안으로 남아 있을 수 있어요. "
+                            "그 초안을 지우고 다시 눌러 주세요.")
         time.sleep(2)
     raise PostError("업로드가 30분 안에 끝나지 않았습니다")
 
@@ -446,6 +450,36 @@ def _click(page, css: str, text=None, *, role: str = "radio", timeout: int = 20_
                 last = e
         time.sleep(0.5)
     raise PostError(f"화면에서 버튼을 찾지 못했어요 ({text.pattern if text is not None else css}): {str(last)[:120]}")
+
+
+def _guard_dialogs(page) -> None:
+    """확인 창(떠나기 등)은 「취소」 — 한 페이지에 한 번만 등록, 이미 닫혔으면 조용히 넘어간다."""
+    if getattr(page, "_aside_dialog", False):
+        return
+
+    def _dismiss(d):
+        try:
+            detail(f"  확인 창 취소: {d.type} {d.message[:80]}")
+            d.dismiss()
+        except Exception:
+            pass
+    page.on("dialog", _dismiss)
+    page._aside_dialog = True
+
+
+def _video_url(page, timeout: int) -> Optional[str]:
+    try:
+        return page.locator(SEL["video_url"]).first.get_attribute("href", timeout=timeout)
+    except Exception:
+        return None
+
+
+def _dialog_alive(page) -> bool:
+    """작성 중인 업로드 창이 아직 있는가 — 사라지고 빈 「파일 선택」 창만 있으면 False."""
+    try:
+        return page.locator(SEL["title"]).count() > 0 or page.locator(SEL["done"]).count() > 0
+    except Exception:
+        return True
 
 
 def _attach_video(s: Session, video: Path) -> bool:
@@ -566,7 +600,7 @@ def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Opt
     title, desc = m["title"], m["description"]
     with Session(acc) as s:
         page = s.page
-        page.on("dialog", lambda d: d.dismiss())        # 떠나기 확인창은 「취소」 — 올리던 걸 지키기
+        _guard_dialogs(page)                            # 떠나기 확인창은 「취소」 — 올리던 걸 지키기(한 번만 등록)
         log("  ① 업로드 창을 여는 중")
         page.goto(UPLOAD, wait_until="domcontentloaded")
         if "accounts.google." in page.url or not s.logged_in():
@@ -576,6 +610,7 @@ def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Opt
         if not _attach_video(s, video):
             s.shot("not-attached")
             raise PostError("영상 파일이 업로드 창에 들어가지 않았어요 — Studio 에 초안은 생기지 않았어요. 같은 버튼을 다시 눌러 주세요.")
+        early_url = _video_url(page, 15_000)            # 세부정보 화면에 바로 나온다 — 미리 읽어 둔다
         try:
             log("  ③ 제목·설명을 쓰는 중")
             _fill(page, SEL["title"], title)
@@ -599,11 +634,7 @@ def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Opt
             detail(f"  upload 멈춤: {e}")
             raise PostError(f"{str(e)[:200]} — 영상은 이미 들어갔어요. 왼쪽 Studio 창에서 나머지를 직접 눌러 마무리해 주세요"
                             " (다시 올리기 버튼을 누르면 초안이 하나 더 생겨요).")
-        url = None
-        try:
-            url = page.locator(SEL["video_url"]).first.get_attribute("href", timeout=20_000)
-        except Exception:
-            pass
+        url = early_url or _video_url(page, 5_000)
         s.shot("ready")
         if dry_run:
             log("✓ 업로드 창을 채워 두었어요. 왼쪽 창에서 확인해 보세요. 「저장/게시」는 누르지 않았어요"

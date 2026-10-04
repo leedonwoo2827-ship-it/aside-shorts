@@ -575,8 +575,10 @@ def login(name: str) -> Dict[str, Any]:
 @app.get("/api/accounts/{name}/status")
 def account_status(name: str) -> Dict[str, Any]:
     from .. import youtube as threads
-    if RUN.busy and "post" in RUN.cmd[:1]:
-        return {"chrome": True, "logged_in": None, "note": "게시 중"}
+    # ★ 업로드하는 동안엔 같은 Chrome 에 두 번째로 붙지 않는다 — 2026-10-05 실측: 「예약 일괄 배치(plan)」 중
+    #   20초마다 도는 이 확인이 붙었다 떨어지면서 Studio 업로드 창이 새로 열려 작성 중이던 창이 사라졌다.
+    if RUN.busy and (RUN.cmd[:1] or [""])[0] in ("post", "plan", "queue", "probe", "login"):
+        return {"chrome": True, "logged_in": None, "note": "올리는 중"}
     try:
         return threads.status(accounts.get(name))
     except Exception as e:      # noqa: BLE001
