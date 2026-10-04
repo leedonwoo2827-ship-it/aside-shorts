@@ -421,24 +421,65 @@ function wireYt(d, id, save, reload) {
 
 // ── 예약 탭 ──
 async function viewSched() {
-  const rows = await api("/api/schedule");
   const acc = $("#acc").value;
+  const [rows, pats, ready] = await Promise.all([api("/api/schedule"), api("/api/patterns"),
+    S.job ? api(`/api/jobs/${S.job}/ready`) : Promise.resolve([])]);
+  const pat = LS.get("schedPat", pats.current || "2-lunch");
+  const t = new Date(Date.now() + 864e5), tomorrow = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;  // 이 PC 시간 기준 내일
   $("#main").innerHTML = `
-    <div class="bar"><button class="pri" id="bPlan">남은 것 자동 배치</button>
-      <span class="note">슬롯 ${S.state.slots.join(" · ")} (하루 ${S.state.slots.length}회)</span></div>
-    <div id="planBox"></div>
+    <div class="sec" style="margin-top:0;border:none;padding-top:0">
+      <b style="color:var(--a)">일괄 예약</b> <span class="note">패턴을 고르고 올릴 영상을 체크하세요</span>
+      <label class="f">패턴</label>
+      <select id="sPat" style="width:100%">${pats.items.map(x => `<option value="${esc(x.key)}" ${x.key === pat ? "selected" : ""}>${esc(x.label)}</option>`).join("")}</select>
+      <p class="note" id="sPatInfo" style="margin:4px 0 0"></p>
+      <label class="f">시작 날짜</label>
+      <input type="date" id="sStart" value="${esc(LS.get("schedStart", "") > tomorrow ? LS.get("schedStart", "") : tomorrow)}" style="width:100%">
+      <label class="f">올릴 영상 <span class="count" id="sCount"></span></label>
+      ${ready.length ? `<div class="row" style="margin-bottom:4px"><label class="note" style="display:flex;gap:6px;align-items:center">
+          <input type="checkbox" id="sAll" checked> 전체 선택</label></div>
+        <div id="sList">${ready.map(r => `<label class="sched" style="grid-template-columns:auto 40px 1fr;cursor:pointer">
+          <input type="checkbox" class="sChk" value="${esc(r.id)}" checked>
+          <div class="thumb" style="width:40px;height:70px;${r.thumb ? `background-image:url(${r.thumb})` : ""}"></div>
+          <div><div><b>${esc(r.id)}</b> ${esc(r.title.replace(r.id, "").trim())}</div><div class="note">${esc(r.hook)}</div>
+          <div class="note" data-when="${esc(r.id)}" style="color:var(--a);font-weight:700"></div></div></label>`).join("")}</div>`
+        : `<div class="empty">예약할 영상이 없어요 (영상이 있고 아직 올리지 않은 것만 나와요)</div>`}
+      <div class="bar" style="margin-top:8px">
+        <button id="sPreview" ${ready.length ? "" : "disabled"}>미리보기</button>
+        <button class="pri" id="sApply" disabled>이대로 예약</button>
+      </div>
+      <p class="note">${S.state.native ? "YouTube 예약 공개로 지금 차례로 업로드해 두고, 정한 시각에 공개돼요(PC 꺼져도 됨). 한 편에 1~2분씩 걸려요."
+                                     : "정한 시각에 이 프로그램이 올려요 — 검은 창은 켜 두세요."}</p>
+    </div>
+    <div class="sec"><b style="color:var(--a)">예약·올린 기록</b>
     ${rows.length ? rows.map(r => `<div class="sched"><span class="w">${esc(r.when.slice(5))}</span>
         <div><div>${esc(r.title)}</div><div class="note">${esc(r.job)} · ${esc(r.account || "")} ${r.error ? `<span style="color:var(--bad)">✗ ${esc(r.error)}</span>` : ""}</div></div>
         <span class="tag ${r.mode === "native" ? "scheduled" : r.posted ? "posted" : "scheduled"}">${r.mode === "native" ? "YouTube 예약" : r.posted ? "올림" : "예약"}</span></div>`).join("")
-      : `<div class="empty">예약이 없습니다.</div>`}`;
-  $("#bPlan").onclick = async () => {
-    if (!acc || !S.job) return alert("계정과 원고를 고르세요");
-    const plan = await api("/api/plan", {method: "POST", body: {job: S.job, account: acc}});
-    if (!plan.length) return alert("배치할 쇼츠가 없습니다 (영상이 있는 미업로드·미예약만 배치)");
-    $("#planBox").innerHTML = `<details open><summary>제안 ${plan.length}건</summary>
-      ${plan.map(p => `<div class="note">${esc(p.when.slice(5))} · ${esc(p.title)}</div>`).join("")}
-      <div class="bar" style="margin-top:8px"><button class="pri" id="bApply">이대로 예약</button></div></details>`;
-    $("#bApply").onclick = async () => { await api("/api/plan", {method: "POST", body: {job: S.job, account: acc, apply: true}}); pollLog(); viewSched() };
+      : `<div class="empty">예약이 없습니다.</div>`}</div>`;
+  const info = () => { const x = pats.items.find(i => i.key === $("#sPat").value);
+    $("#sPatInfo").textContent = x ? `평일 ${x.weekday.join(" · ")} / 주말 ${x.weekend.join(" · ")}` : "" };
+  const picked = () => [...document.querySelectorAll(".sChk:checked")].map(c => c.value);
+  const reset = () => { document.querySelectorAll("[data-when]").forEach(e => e.textContent = ""); $("#sApply").disabled = true;
+    $("#sCount").textContent = `${picked().length} / ${ready.length}편`; };
+  info(); if (ready.length) reset();
+  $("#sPat").onchange = () => { LS.set("schedPat", $("#sPat").value); info(); reset() };
+  $("#sStart").onchange = () => { LS.set("schedStart", $("#sStart").value); reset() };
+  $("#sAll") && ($("#sAll").onchange = e => { document.querySelectorAll(".sChk").forEach(c => c.checked = e.target.checked); reset() });
+  document.querySelectorAll(".sChk").forEach(c => c.onchange = reset);
+  const body = apply => ({job: S.job, account: acc, ids: picked(), pattern: $("#sPat").value, start: $("#sStart").value, apply});
+  $("#sPreview").onclick = async () => {
+    if (!acc) return alert("YouTube 계정을 먼저 추가하세요");
+    if (!picked().length) return alert("올릴 영상을 하나 이상 체크하세요");
+    const plan = await api("/api/plan", {method: "POST", body: body(false)});
+    plan.forEach(p => { const e = document.querySelector(`[data-when="${p.data_id}"]`); if (e) e.textContent = `⏰ ${p.when.slice(5)} (${p.dow})` });
+    $("#sApply").disabled = !plan.length;
+    $("#sApply").textContent = `이대로 예약 (${plan.length}편, ~${plan.length ? plan[plan.length - 1].when.slice(5, 10) : ""})`;
+  };
+  $("#sApply").onclick = async () => {
+    const n = picked().length;
+    if (!confirm(`${n}편을 「${$("#sPat").selectedOptions[0].textContent}」 패턴으로 예약합니다.`)) return;
+    await api("/api/plan", {method: "POST", body: body(true)});
+    if ($("#logbox").offsetHeight < 300) setLogH(320);
+    pollLog(); viewSched();
   };
 }
 

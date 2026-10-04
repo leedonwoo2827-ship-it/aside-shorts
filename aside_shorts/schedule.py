@@ -39,14 +39,41 @@ def taken(account: Optional[str] = None) -> List[datetime]:
     return out
 
 
-def next_slots(n: int, account: Optional[str] = None, start: Optional[datetime] = None) -> List[datetime]:
-    """하루 1~2회(설정 youtube.slots) 중 비어 있는 다음 자리 n 개."""
-    slots = config.load()["youtube"]["slots"] or ["08:30"]
+# 예약 패턴 — 패널 콤보박스. 교과 쇼츠는 하루 1~2편을 매일 같은 시각에 꾸준히(3편 이상은 서로 노출을 깎아 먹음).
+PATTERNS: Dict[str, Dict] = {
+    "2-lunch":   {"label": "하루 2편 · 평일 12:30+19:00 / 주말 11:00+20:00 (추천)",
+                  "weekday": ["12:30", "19:00"], "weekend": ["11:00", "20:00"]},
+    "2-morning": {"label": "하루 2편 · 평일 07:30+19:00 / 주말 11:00+20:00",
+                  "weekday": ["07:30", "19:00"], "weekend": ["11:00", "20:00"]},
+    "1-evening": {"label": "하루 1편 · 평일 19:00 / 주말 20:00 (처음 2주 시험용)",
+                  "weekday": ["19:00"], "weekend": ["20:00"]},
+    "2-fixed":   {"label": "하루 2편 · 매일 12:00+19:00",
+                  "weekday": ["12:00", "19:00"], "weekend": ["12:00", "19:00"]},
+}
+
+
+def pattern(key: Optional[str] = None) -> Dict:
+    """패턴 키 → {weekday, weekend}. 키가 없거나 'config' 면 설정 youtube.slots/weekend_slots."""
+    cfg = config.load()["youtube"]
+    key = key or cfg.get("pattern") or "config"
+    if key in PATTERNS:
+        return PATTERNS[key]
+    wd = cfg.get("slots") or ["19:00"]
+    return {"label": "설정의 시각", "weekday": wd, "weekend": cfg.get("weekend_slots") or wd}
+
+
+def next_slots(n: int, account: Optional[str] = None, start: Optional[datetime] = None,
+               pat: Optional[str] = None) -> List[datetime]:
+    """패턴(평일/주말 시각) 중 비어 있는 다음 자리 n 개. start 가 오늘보다 뒤면 그날 0시부터."""
+    p = pattern(pat)
     busy = {d.strftime(FMT) for d in taken(account)}
-    cur = (start or datetime.now()) + timedelta(minutes=15)
+    cur = max(start or datetime.now(), datetime.now() + timedelta(minutes=15))
+    if start and start > datetime.now():
+        cur = start
     day = cur.replace(hour=0, minute=0, second=0, microsecond=0)
     out: List[datetime] = []
     for _ in range(400):
+        slots = p["weekend"] if day.weekday() >= 5 else p["weekday"]
         for hm in slots:
             h, m = map(int, hm.split(":"))
             d = day.replace(hour=h, minute=m)

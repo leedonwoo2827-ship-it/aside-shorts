@@ -532,7 +532,7 @@ const SFIELDS = [
   ["shorts", "target_seconds", "목표 길이(초)", "num"], ["shorts", "lines_min", "문장 수 최소", "num"], ["shorts", "lines_max", "문장 수 최대", "num"],
   ["shorts", "images_min", "그림 수 최소", "num"], ["shorts", "images_max", "그림 수 최대", "num"], ["shorts", "style", "기본 스타일", "style"],
   ["tts", "voice", "기본 목소리", "voice"], ["tts", "speed", "기본 말 빠르기", "num"],
-  ["youtube", "native_schedule", "예약은 YouTube 예약 공개로(PC 꺼져도 됨)", "bool"], ["youtube", "visibility", "기본 공개 범위 (public·unlisted·private)", "text"], ["youtube", "slots", "자동 예약 시각(쉼표)", "list"],
+  ["youtube", "native_schedule", "예약은 YouTube 예약 공개로(PC 꺼져도 됨)", "bool"], ["youtube", "visibility", "기본 공개 범위 (public·unlisted·private)", "text"], ["youtube", "slots", "평일 예약 시각(쉼표) — 패턴이 config 일 때", "list"], ["youtube", "weekend_slots", "주말 예약 시각(쉼표) — 패턴이 config 일 때", "list"],
 ];
 async function viewGoal() {
   const g = await api("/api/settings");

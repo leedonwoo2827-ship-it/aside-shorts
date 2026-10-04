@@ -29,7 +29,8 @@ DEFAULTS: Dict[str, Any] = {
     "image": {"workers": 2},
     "render": {"w": 1080, "h": 1920, "fps": 30, "crf": 18, "preset": "medium", "jpeg_quality": 92},
     "youtube": {"chrome": "", "native_schedule": True, "visibility": "public",
-                "slots": ["12:00", "19:00"], "base_port": 9361},
+                "pattern": "2-lunch",                                  # 예약 패턴(schedule.PATTERNS) — 기본 하루 2편
+                "slots": ["12:30", "19:00"], "weekend_slots": ["11:00", "20:00"], "base_port": 9361},
     "ui": {"port": 5293, "width": 460},
 }
 

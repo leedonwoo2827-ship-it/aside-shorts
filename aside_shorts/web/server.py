@@ -266,7 +266,7 @@ EDITABLE = {   # 화면에서 고칠 수 있는 전체 설정 (section → keys)
     "claude": ["script_model", "image_model", "motion_model", "effort", "see_images", "fix_rounds", "limit_wait_hours", "limit_poll_min"],
     "shorts": ["target_seconds", "lines_min", "lines_max", "images_min", "images_max", "style"],
     "tts": ["voice", "speed"],
-    "youtube": ["native_schedule", "visibility", "slots"],
+    "youtube": ["native_schedule", "visibility", "pattern", "slots", "weekend_slots"],
 }
 LOCAL_CFG = config.ROOT / "aside.config.local.json"
 
@@ -635,20 +635,53 @@ class Plan(BaseModel):
     job: str
     account: str
     apply: bool = False
+    ids: List[str] = []         # 체크한 쇼츠(비우면 올릴 수 있는 것 전부)
+    pattern: str = ""           # schedule.PATTERNS 키
+    start: str = ""             # YYYY-MM-DD
+
+
+@app.get("/api/patterns")
+def patterns() -> Dict[str, Any]:
+    cur = config.load()["youtube"].get("pattern") or "2-lunch"
+    return {"current": cur, "items": [{"key": k, **v} for k, v in schedule.PATTERNS.items()]}
+
+
+@app.get("/api/jobs/{name}/ready")
+def ready(name: str) -> List[Dict[str, Any]]:
+    """예약할 수 있는 쇼츠 — 영상 있음 · 안 올림 · 예약 안 됨. 단원 순서."""
+    from ..cli import _ready
+    job = _job(name)
+    out = []
+    for sid in _ready(job):
+        sh = job.short(sid) or {}
+        v = job.video(sid)
+        out.append({"id": sid, "title": _title(job, sid), "hook": (sh.get("hook") or {}).get("line1", ""),
+                    "thumb": job.url(v.with_suffix(".jpg")) if v.with_suffix(".jpg").exists() else ""})
+    return out
 
 
 @app.post("/api/plan")
 def plan(body: Plan) -> List[Dict[str, Any]]:
-    """남은 쇼츠(영상 있음 · 미업로드 · 미예약)를 다음 빈 슬롯에. apply 면 실제로 건다(native 면 업로드까지)."""
+    """체크한 쇼츠(없으면 전부)를 패턴의 다음 빈 시각에 차례로. apply 면 실제로 건다(native 면 업로드까지)."""
     from ..cli import _ready
     job = _job(body.job)
     left = _ready(job)
-    slots = schedule.next_slots(len(left), body.account)
-    out = [{"data_id": sid, "title": _title(job, sid), "when": when.strftime(schedule.FMT)}
-           for sid, when in zip(left, slots)]
+    if body.ids:
+        left = [s for s in left if s in set(body.ids)]
+    start = schedule.parse_when(body.start + " 00:00") if body.start else None
+    slots = schedule.next_slots(len(left), body.account, start=start, pat=body.pattern or None)
+    out = [{"data_id": sid, "title": _title(job, sid), "when": when.strftime(schedule.FMT),
+            "dow": "월화수목금토일"[when.weekday()]} for sid, when in zip(left, slots)]
     if body.apply and out:
+        if RUN.busy:
+            raise HTTPException(409, "지금 다른 일을 하는 중이에요. 끝나면 다시 눌러 주세요.")
         if config.load()["youtube"].get("native_schedule"):
-            RUN.start(["plan", "--job", body.job, "--account", body.account, "--apply"])
+            args = ["plan", "--job", body.job, "--account", body.account, "--apply", "--only", ",".join(left)]
+            if body.pattern:
+                args += ["--pattern", body.pattern]
+            if body.start:
+                args += ["--start", body.start]
+            RUN.start(args)
         else:
             for sid, when in zip(left, slots):
                 schedule.enqueue(job, sid, when, body.account)

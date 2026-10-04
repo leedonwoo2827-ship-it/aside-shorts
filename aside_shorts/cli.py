@@ -314,7 +314,11 @@ def cmd_plan(a) -> None:
     job = need(a.job)
     acc = accounts.get(a.account)
     left = _ready(job)
-    slots = schedule.next_slots(len(left), acc["name"])
+    if a.only:
+        want = _only(a.only)
+        left = [s for s in left if s in want]
+    start = schedule.parse_when(a.start + " 00:00") if a.start else None
+    slots = schedule.next_slots(len(left), acc["name"], start=start, pat=a.pattern)
     native = bool(config.load()["youtube"].get("native_schedule"))
     for sid, when in zip(left, slots):
         log(f"  {when:%m-%d(%a) %H:%M}  {sid}  {(job.short(sid) or {}).get('perspective', '')}")
@@ -385,6 +389,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     p = sub.add_parser("plan")
     p.add_argument("--job")
     p.add_argument("--account")
+    p.add_argument("--only", help="예약할 쇼츠만(쉼표). 비우면 영상 있고 안 올린 것 전부")
+    p.add_argument("--pattern", help="2-lunch(기본) · 2-morning · 1-evening · 2-fixed · config")
+    p.add_argument("--start", help="시작 날짜 YYYY-MM-DD")
     p.add_argument("--apply", action="store_true")
 
     sub.add_parser("queue")
