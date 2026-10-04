@@ -445,7 +445,7 @@ async function viewSched() {
         : `<div class="empty">예약할 영상이 없어요 (영상이 있고 아직 올리지 않은 것만 나와요)</div>`}
       <div class="bar" style="margin-top:8px">
         <button id="sPreview" ${ready.length ? "" : "disabled"}>미리보기</button>
-        <button class="pri" id="sApply" disabled>이대로 예약</button>
+        <button class="pri" id="sApply">이대로 예약</button>
       </div>
       <p class="note">${S.state.native ? "YouTube 예약 공개로 지금 차례로 업로드해 두고, 정한 시각에 공개돼요(PC 꺼져도 됨). 한 편에 1~2분씩 걸려요."
                                      : "정한 시각에 이 프로그램이 올려요 — 검은 창은 켜 두세요."}</p>
@@ -458,7 +458,8 @@ async function viewSched() {
   const info = () => { const x = pats.items.find(i => i.key === $("#sPat").value);
     $("#sPatInfo").textContent = x ? `평일 ${x.weekday.join(" · ")} / 주말 ${x.weekend.join(" · ")}` : "" };
   const picked = () => [...document.querySelectorAll(".sChk:checked")].map(c => c.value);
-  const reset = () => { document.querySelectorAll("[data-when]").forEach(e => e.textContent = ""); $("#sApply").disabled = true;
+  const reset = () => { document.querySelectorAll("[data-when]").forEach(e => e.textContent = "");
+    $("#sApply").disabled = !picked().length; $("#sApply").textContent = `이대로 예약 (${picked().length}편)`;
     $("#sCount").textContent = `${picked().length} / ${ready.length}편`; };
   info(); if (ready.length) reset();
   $("#sPat").onchange = () => { LS.set("schedPat", $("#sPat").value); info(); reset() };
@@ -466,17 +467,19 @@ async function viewSched() {
   $("#sAll") && ($("#sAll").onchange = e => { document.querySelectorAll(".sChk").forEach(c => c.checked = e.target.checked); reset() });
   document.querySelectorAll(".sChk").forEach(c => c.onchange = reset);
   const body = apply => ({job: S.job, account: acc, ids: picked(), pattern: $("#sPat").value, start: $("#sStart").value, apply});
-  $("#sPreview").onclick = async () => {
-    if (!acc) return alert("YouTube 계정을 먼저 추가하세요");
-    if (!picked().length) return alert("올릴 영상을 하나 이상 체크하세요");
+  const preview = async () => {
+    if (!acc) { alert("YouTube 계정을 먼저 추가하세요"); return null }
+    if (!picked().length) { alert("올릴 영상을 하나 이상 체크하세요"); return null }
     const plan = await api("/api/plan", {method: "POST", body: body(false)});
     plan.forEach(p => { const e = document.querySelector(`[data-when="${p.data_id}"]`); if (e) e.textContent = `⏰ ${p.when.slice(5)} (${p.dow})` });
-    $("#sApply").disabled = !plan.length;
-    $("#sApply").textContent = `이대로 예약 (${plan.length}편, ~${plan.length ? plan[plan.length - 1].when.slice(5, 10) : ""})`;
+    return plan;
   };
+  $("#sPreview").onclick = preview;
   $("#sApply").onclick = async () => {
-    const n = picked().length;
-    if (!confirm(`${n}편을 「${$("#sPat").selectedOptions[0].textContent}」 패턴으로 예약합니다.`)) return;
+    const plan = await preview();           // 미리보기를 안 눌렀어도 여기서 시각을 배정해 보여 준다
+    if (!plan || !plan.length) return;
+    if (!confirm(`「${$("#sPat").selectedOptions[0].textContent}」 패턴으로 ${plan.length}편을 예약합니다.\n\n` +
+                 plan.map(p => `${p.when.slice(5)} (${p.dow})  ${p.data_id}`).join("\n"))) return;
     await api("/api/plan", {method: "POST", body: body(true)});
     if ($("#logbox").offsetHeight < 300) setLogH(320);
     pollLog(); viewSched();
