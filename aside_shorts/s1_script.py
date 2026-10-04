@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List
 
 from . import config
@@ -17,8 +18,8 @@ PROMPT = config.ROOT / "aside_shorts" / "prompts" / "shorts_script.md"
 _STR = {"type": "string"}
 SCHEMA: Dict[str, Any] = {
     "type": "object",
-    "required": ["shorts"],
-    "properties": {"shorts": {"type": "array", "minItems": 1, "items": {
+    "required": ["unit_title", "unit_topic", "shorts"],
+    "properties": {"unit_title": _STR, "unit_topic": _STR, "shorts": {"type": "array", "minItems": 1, "items": {
         "type": "object",
         "required": ["perspective", "hook", "lines", "images", "youtube"],
         "properties": {
@@ -68,6 +69,7 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
             log(f"「{u.section or u.name}」 대본은 이미 있어요 ({len(have)}편).")
             continue
         log(f"「{u.section or u.name}」 개작본으로 쇼츠 대본을 쓰는 중이에요 (1~3분) …")
+
         head = f"[교과] {job.get('title', '')}\n[단원] {u.chapter} / {u.section}\n\n[원고]\n"
         res = claude_cli.structured(head + u.text, system_prompt(), SCHEMA, model=model)
         shorts: List[Dict[str, Any]] = res.get("shorts") or []
@@ -77,11 +79,15 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
             (u.script_dir / f"{old}.json").unlink(missing_ok=True)
         for n, sh in enumerate(shorts, 1):
             sid = f"{u.prefix}-{n:02d}"
-            sh = {"id": sid, "unit": f"{u.chapter} {u.section}".strip(), **sh}
+            sec_no = u.prefix.split("-")[1]
+            title = (res.get("unit_title") or "").strip() or re.sub(r"^\d+절\s*", "", u.section)
+            ch = u.chapter if len(u.chapter) > 3 else f"{u.prefix.split('-')[0]}장"
+            sh = {"id": sid, "unit": f"{ch} {sec_no}절 {title}".strip(), "unit_topic": res.get("unit_topic", ""), **sh}
             for ln in sh.get("lines") or []:      # 자막에 없는 키워드는 강조가 안 된다 — 걸러 둔다
                 ln["keywords"] = [k for k in ln.get("keywords") or [] if k and k in ln.get("text", "")]
             for i, im in enumerate(sh.get("images") or [], 1):
                 im["key"] = im.get("key") or f"img{i}"
             config.write_json(u.script_dir / f"{sid}.json", sh)
             log(f"  ✓ {sid} {sh['perspective']} — {sh['hook']['line1']} (문장 {len(sh['lines'])} · 그림 {len(sh['images'])})")
+        log(f"  이 절의 학습 주제: {res.get('unit_topic', '')}")
         config.write_json(u.script_dir / "_s1.json", {"hash": u.hash, "source": u.source.name})

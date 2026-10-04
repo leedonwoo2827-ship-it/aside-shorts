@@ -26,7 +26,7 @@ from ..job import Job, all_jobs
 from ..log import log
 
 STATIC = Path(__file__).parent / "static"
-ALLOWED = {"make", "s0-rewrite", "s1-script", "s2-tts", "s3-images", "s4-motion", "s5-render", "post", "plan", "queue",
+ALLOWED = {"make", "all", "s0-rewrite", "s1-script", "s2-tts", "s3-images", "s4-motion", "s5-render", "post", "plan", "queue",
            "login", "probe", "doctor", "assets", "tts-setup", "claude-login"}
 
 app = FastAPI(title="aside-shorts")
@@ -38,7 +38,7 @@ def label(args: List[str]) -> str:
     cmd = args[0] if args else ""
     if cmd == "post":
         return "미리 채워 보기" if "--dry-run" in args else ("예약 넣기" if "--at" in args else "올리기")
-    names = {"make": "딸깍 만들기", "s0-rewrite": "안전 개작", "s1-script": "대본 쓰기", "s2-tts": "목소리 입히기",
+    names = {"make": "딸깍 만들기", "all": "밤샘 0→5", "s0-rewrite": "안전 개작", "s1-script": "대본 쓰기", "s2-tts": "목소리 입히기",
              "s3-images": "그림 그리기", "s4-motion": "모션 짜기", "s5-render": "영상 굽기",
              "queue": "예약 시간 확인", "plan": "예약 자동 배치", "login": "로그인 창 열기",
              "probe": "업로드 창 구조 확인", "doctor": "점검", "assets": "글꼴·GSAP 받기", "tts-setup": "SuperTonic3 받기",
@@ -263,7 +263,7 @@ def unit_compare(name: str, prefix: str) -> Dict[str, Any]:
 
 # ── 설정 ─────────────────────────────────────────────────────────────────────
 EDITABLE = {   # 화면에서 고칠 수 있는 전체 설정 (section → keys)
-    "claude": ["script_model", "image_model", "motion_model", "effort", "see_images", "fix_rounds"],
+    "claude": ["script_model", "image_model", "motion_model", "effort", "see_images", "fix_rounds", "limit_wait_hours", "limit_poll_min"],
     "shorts": ["target_seconds", "lines_min", "lines_max", "images_min", "images_max", "style"],
     "tts": ["voice", "speed"],
     "youtube": ["native_schedule", "visibility", "slots"],

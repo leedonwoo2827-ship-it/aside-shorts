@@ -31,6 +31,10 @@ class ClaudeNotLoggedIn(ClaudeError):
     pass
 
 
+class ClaudeLimit(ClaudeError):
+    """사용 한도·과부하 — 기다렸다 이어서 한다(claude_wait)."""
+
+
 def exe() -> Optional[str]:
     return shutil.which("claude") or shutil.which("claude.cmd")
 
@@ -70,18 +74,37 @@ def _run(prompt: str, system: str, *, model: str, schema: Optional[Dict[str, Any
     try:
         data = json.loads(out)
     except json.JSONDecodeError:
+        from .claude_wait import is_limit
         low = (out + err).lower()
+        if is_limit(out + err):
+            raise ClaudeLimit((err or out)[:400])
         if "login" in low or "authenticat" in low or "/login" in low:
             raise ClaudeNotLoggedIn("claude 로그인이 필요합니다 — 터미널에서 claude 를 실행해 로그인하세요")
         raise ClaudeError(f"Claude 응답을 읽지 못했습니다 (code {proc.returncode}): {(err or out)[:400]}")
     detail(f"  claude {model} {time.time() - t0:.0f}초 · turns {data.get('num_turns')} · "
            f"in {((data.get('usage') or {}).get('input_tokens'))} out {((data.get('usage') or {}).get('output_tokens'))}")
     if data.get("is_error"):
+        from .claude_wait import is_limit
         msg = str(data.get("result") or data.get("subtype") or "")
+        status = data.get("api_error_status")
+        if is_limit(msg) or status in (429, 529):
+            raise ClaudeLimit(f"{msg[:400]} (status {status})")
         if "login" in msg.lower() or "auth" in msg.lower():
             raise ClaudeNotLoggedIn(msg[:300])
         raise ClaudeError(f"Claude 오류: {msg[:400]}")
     return data
+
+
+def _patient(fn):
+    """한도에 걸리면 풀릴 때까지 기다렸다 같은 호출을 다시 한다(밤새·며칠 무인 제작)."""
+    from .claude_wait import wait
+    while True:
+        try:
+            return fn()
+        except ClaudeLimit as e:
+            detail(f"  Claude 한도: {e}")
+            if not wait(str(e)):
+                raise
 
 
 def structured(prompt: str, system: str, schema: Dict[str, Any], *, model: str,
@@ -90,12 +113,12 @@ def structured(prompt: str, system: str, schema: Dict[str, Any], *, model: str,
     last: Exception = ClaudeError("?")
     for attempt in range(n + 1):
         try:
-            data = _run(prompt, system, model=model, schema=schema)
+            data = _patient(lambda: _run(prompt, system, model=model, schema=schema))
             res = data.get("structured_output")
             if res is None:
                 res = json.loads(str(data.get("result") or "").strip().strip("`").removeprefix("json"))
             return res
-        except ClaudeNotLoggedIn:
+        except (ClaudeNotLoggedIn, ClaudeLimit):
             raise
         except (ClaudeError, json.JSONDecodeError) as e:
             last = e
@@ -106,7 +129,7 @@ def structured(prompt: str, system: str, schema: Dict[str, Any], *, model: str,
 
 def text(prompt: str, system: str, *, model: str, read_dirs: Optional[List[Path]] = None,
          timeout: Optional[int] = None) -> str:
-    data = _run(prompt, system, model=model, read_dirs=read_dirs, timeout=timeout)
+    data = _patient(lambda: _run(prompt, system, model=model, read_dirs=read_dirs, timeout=timeout))
     return str(data.get("result") or "")
 
 

@@ -19,7 +19,8 @@ LOCAL = ROOT / "local.json"
 DEFAULTS: Dict[str, Any] = {
     # 대본·그림(SVG)·모션 전부 Claude(구독 OAuth 로그인한 claude CLI) — API 키·ChatGPT 불필요
     "claude": {"script_model": "opus", "image_model": "opus", "motion_model": "opus", "effort": "high",
-               "timeout_sec": 900, "retries": 1, "see_images": True, "fix_rounds": 2},
+               "timeout_sec": 900, "retries": 1, "see_images": True, "fix_rounds": 2,
+               "limit_wait_hours": 72, "limit_poll_min": 30},   # 한도에 걸리면 최대 72시간 기다렸다 이어서
     "shorts": {"target_seconds": 35, "lines_min": 6, "lines_max": 8, "images_min": 6, "images_max": 8,
                "style": "vox-retro"},
     # SuperTonic3 만 쓴다(내장 — assets/supertonic) — 다른 엔진으로 넘어가지 않는다

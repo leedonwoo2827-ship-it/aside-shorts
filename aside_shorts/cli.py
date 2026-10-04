@@ -2,7 +2,8 @@
 
 만들기
   new <job> --from <원고폴더|.docx> [--files a.docx …] [--rewritten] [--title 통합사회1] [--style vox-retro] [--voice F4]
-  make      --job J [--only 1-2-04,…] [--force] [--limit N]   s0→s5 한 번에
+  make      --job J [--only 1-2-04,…] [--force] [--limit N]   딸깍: 쇼츠마다 s2→s5 (목소리·그림·모션·영상) — 개작·대본은 사람이 확인하고 따로
+  all       --job J [--only 1-2,…]                          밤샘: 단원마다 s0 개작 → s1 대본 → 쇼츠마다 s2→s5 (한 편 실패해도 계속)
   s0-rewrite | s1-script | s2-tts | s3-images | s4-motion | s5-render     (단계별, 옵션 같음)
 올리기 (YouTube Studio)
   account add <이름> [--label @채널] | account list | account use <이름> | account rm <이름>
@@ -32,6 +33,7 @@ from .job import Job, all_jobs, need
 from .log import detail, log
 
 STAGES = ["s0-rewrite", "s1-script", "s2-tts", "s3-images", "s4-motion", "s5-render"]
+MAKE = STAGES[2:]      # 딸깍 = 목소리→영상. 0 개작·1 대본은 사람이 확인하는 단계라 따로 누른다
 # 로그 창에 보이는 단계 이름 — 쉬운 말로
 STEP_NAMES = {"s0-rewrite": "0/5 안전 개작", "s1-script": "1/5 대본 쓰기", "s2-tts": "2/5 목소리 입히기",
               "s3-images": "3/5 그림 그리기", "s4-motion": "4/5 모션 짜기", "s5-render": "5/5 영상 굽기"}
@@ -94,6 +96,56 @@ def cmd_new(a) -> None:
     log(f"단원 {len(us)}개: " + ", ".join(f"{u.prefix}({'원본' if u.raw else ''}{'+' if u.raw and u.rewrite else ''}{'개작' if u.rewrite else ''})" for u in us))
     if any(u.raw and not u.rewrite for u in us):
         log("원본만 있는 단원은 「0 안전 개작」으로 개작본을 먼저 만들어 주세요.")
+
+
+def _guard(what: str, fn, fails: List[str]) -> bool:
+    """한 단원·한 편이 실패해도 나머지는 계속 — 실패는 기록만 한다(밤샘 무인 제작)."""
+    from .llm.claude_cli import ClaudeNotLoggedIn
+    try:
+        fn()
+        return True
+    except ClaudeNotLoggedIn:
+        raise                       # 로그인이 풀리면 나머지도 다 안 된다 — 멈춘다
+    except BaseException as e:      # noqa: BLE001 — SystemExit(쉬운 말 실패)도 여기서 받는다
+        if isinstance(e, KeyboardInterrupt):
+            raise
+        import traceback
+        detail(f"{what} 실패: {traceback.format_exc()}")
+        msg = str(e) if isinstance(e, SystemExit) and not isinstance(e.code, int) else friendly(e) if isinstance(e, Exception) else str(e)
+        log(f"  ✗ {what} 실패 — 다음으로 넘어가요 ({str(msg)[:120]})")
+        fails.append(what)
+        return False
+
+
+def cmd_make(job: Job, only, force: bool, limit: int, full: bool = False) -> int:
+    """딸깍(make) = 쇼츠마다 2 목소리 → 5 영상. 밤샘(all) = 단원마다 0 개작 → 1 대본 다음 쇼츠마다 2 → 5.
+
+    한 편이 실패해도 다음 편으로 넘어간다. Claude 한도에 걸리면 기다렸다 이어 간다(claude_wait).
+    이미 된 단계는 건너뛰므로 같은 버튼을 다시 눌러도 남은 것만 한다."""
+    fails: List[str] = []
+    if full:
+        for st in STAGES[:2]:
+            for u in job.units:
+                if only and not any(w == u.prefix or w.startswith(u.prefix + "-") for w in only):
+                    continue
+                _guard(f"{STEP_NAMES[st]} {u.prefix}", lambda st=st, u=u: run_stage(st, job, only=[u.prefix], force=force), fails)
+    ids = job.pick(only) if (only and job.ids()) else job.ids()
+    if not ids:
+        log("만들 쇼츠가 없어요 — 먼저 「1 대본」을 해 주세요.")
+        return 1 if fails else 0
+    log(f"쇼츠 {len(ids)}편을 차례로 만들어요 (한 편씩 목소리 → 그림 → 모션 → 영상)")
+    done = 0
+    for n, sid in enumerate(ids, 1):
+        log(f"━━ [{n}/{len(ids)}] {sid}")
+        ok = True
+        for st in MAKE:
+            if not _guard(f"{sid} {STEP_NAMES[st]}", lambda st=st: run_stage(st, job, only=[sid], force=force, limit=limit), fails):
+                ok = False
+                break               # 이 편은 다음 단계로 못 간다 — 다음 편으로
+        done += ok and job.video(sid).exists()
+    log(f"다 됐어요! 영상 {sum(1 for s in job.ids() if job.video(s).exists())}편 (이번에 {done}편 확인)"
+        + (f" · 실패 {len(fails)}건: {', '.join(fails)} — 같은 버튼을 다시 누르면 실패한 것만 이어서 해요" if fails else ""))
+    return 1 if fails else 0
 
 
 def cmd_assets(_a=None) -> None:
@@ -303,7 +355,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--style")
     p.add_argument("--voice")
 
-    for name in ["make", *STAGES]:
+    for name in ["make", "all", *STAGES]:
         p = sub.add_parser(name)
         p.add_argument("--job")
         p.add_argument("--only")
@@ -374,13 +426,14 @@ def friendly(e: Exception) -> str:
 def _dispatch(a, ap) -> int:
     if a.cmd == "new":
         cmd_new(a)
-    elif a.cmd in STAGES or a.cmd == "make":
-        job = need(a.job)
-        kw = dict(only=_only(a.only), force=a.force, limit=a.limit)
-        for st in (STAGES if a.cmd == "make" else [a.cmd]):
-            run_stage(st, job, **kw)
-        if a.cmd == "make":
-            log(f"다 됐어요! out/ 폴더에 쇼츠 {sum(1 for s in job.ids() if job.video(s).exists())}편이 있어요.")
+    elif a.cmd in STAGES:
+        from .llm.claude_wait import keep_awake
+        keep_awake(True)            # 밤새 도는 동안 PC 가 절전에 들어가지 않게
+        run_stage(a.cmd, need(a.job), only=_only(a.only), force=a.force, limit=a.limit)
+    elif a.cmd in ("make", "all"):
+        from .llm.claude_wait import keep_awake
+        keep_awake(True)
+        return cmd_make(need(a.job), _only(a.only), a.force, a.limit, full=a.cmd == "all")
     elif a.cmd == "account":
         if a.action in ("add", "use", "rm") and not a.name:
             raise SystemExit("계정 이름을 주세요")
