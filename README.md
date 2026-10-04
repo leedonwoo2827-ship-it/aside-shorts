@@ -18,7 +18,7 @@
 |---|---|---|---|
 | s0-rewrite | Claude + 코드 검증 | **교과서 원문 → 저작권 안전 개작본**: 개념어·정의 유지, 사례만 교체, 문단 수·흐름·분량(95~110%) 유지. 코드가 문단 수·보존어·사례 유사도(≤0.7)를 검증, 걸리면 다시 | `02_rewrite/*.docx` + `검증.json` |
 | s1-script | Claude (`claude -p`, Opus) | **개작본만** 읽어 관점별 쇼츠 대본(후크 2줄 · 문장 6~8 · 연출 메모 · 그림 목록 · 유튜브 제목/설명/해시태그) | `03_script/<id>.json` |
-| s2-tts | **SuperTonic3**(영상공방 VoiceWright) | 문장별 음성 → 한 줄로 잇고 **문장별 시작·끝 시각** 기록 | `04_bundle/<id>/audio/` |
+| s2-tts | **SuperTonic3**(내장, ONNX) | 문장별 음성 → 한 줄로 잇고 **문장별 시작·끝 시각** 기록 | `04_bundle/<id>/audio/` |
 | s3-images | Claude (SVG 일러스트) | 스티커(투명)·배경·도해를 SVG 로 그려 PNG 로 변환. 패널에서 직접 만든 그림으로 교체 가능 | `04_bundle/<id>/images/` |
 | s4-motion | Claude (Opus, 그림을 직접 열어 봄) | 대사·타이밍·그림·스타일 가이드 → HTML+GSAP 장면. 브라우저로 점검해 오류가 있으면 Claude 가 다시 고침 | `04_bundle/<id>/motion/` |
 | s5-render | Playwright + ffmpeg | 멈춘 타임라인을 프레임마다 찍어 mp4 + 음성 | `04_bundle/<id>/out/<id>.mp4` |
@@ -61,8 +61,9 @@ run.bat              :: 제작 대시보드(넓은 웹앱 창)
   - 오른쪽 좁은 창 + 왼쪽 YouTube Studio Chrome. ＋계정(예: `dekman`, 표시 `@dekmanfactory`) → 로그인 → Google 로그인·채널 선택(처음 한 번)
   - 쇼츠 → 미리 채워 보기 → 지금 올리기/예약
 
-SuperTonic3 는 영상공방 폴더(`D:\00work\260604-od-lmimg-supoer3-mp4`)의 VoiceWright 를 부른다.
-다른 위치면 `aside.config.local.json` 에 `{"tts": {"bridge_dir": "…"}}`. **다른 TTS 로 넘어가지 않는다.**
+SuperTonic3 는 **이 프로젝트에 내장**되어 있다(`aside_shorts/supertonic/`). setup.bat 이 모델·목소리 10종을
+HuggingFace `Supertone/supertonic-3` 에서 `assets/supertonic/` 로 받는다(약 380MB, 처음 한 번). 다른 프로그램·폴더가 필요 없다.
+**다른 TTS 로 넘어가지 않는다.** 발음사전은 `aside_shorts/supertonic/pronunciation_map.yaml` (AI→에이아이 등).
 
 ## 매번 (CLI 로도 똑같이)
 

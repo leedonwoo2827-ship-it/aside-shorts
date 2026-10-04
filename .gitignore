@@ -17,3 +17,6 @@ logs/
 _context/
 templates/fonts/
 templates/vendor/
+
+# SuperTonic3 model files (downloaded by setup.bat)
+assets/

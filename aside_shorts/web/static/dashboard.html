@@ -188,8 +188,8 @@ code{background:#f1ede4;border-radius:4px;padding:1px 5px}
     <div class="row"><span id="a-claude">확인 중…</span><button class="b" id="a-claude-btn">Claude 로그인</button></div>
   </div>
   <div class="card">
-    <h2>SuperTonic3 <span class="mini">— 목소리 (영상공방 VoiceWright)</span></h2>
-    <div class="row"><span id="a-tts">확인 중…</span><button class="b" id="a-tts-set">폴더 바꾸기 → 설정 탭</button></div>
+    <h2>SuperTonic3 <span class="mini">— 목소리 (내장 · setup.bat 이 모델을 받아 둠)</span></h2>
+    <div class="row"><span id="a-tts">확인 중…</span><button class="b" id="a-tts-set" title="모델·목소리 파일을 다시 받기(빠진 것만)">모델 받기</button></div>
   </div>
   <div class="card">
     <h2>YouTube <span class="mini">— 채널마다 전용 Chrome 프로필. 처음 한 번 Google 로그인·채널 선택</span></h2>
@@ -256,7 +256,7 @@ async function checkTools() {
     $("#a-claude-btn").textContent = c.logged_in ? "다른 계정으로" : "Claude 로그인"; $("#a-claude-btn").className = "b" + (c.logged_in ? "" : " p"); }
   const t = await api("/api/tools").catch(() => null);
   if (t) { $("#ttdot").className = "dot " + (t.tts ? "on" : "off"); $("#tttxt").textContent = t.tts ? "SuperTonic3" : "SuperTonic3 없음";
-    $("#a-tts").innerHTML = t.tts ? `<span class="ok">✓ 확인</span> <code>${esc(t.tts_dir)}</code>` : `<span class="bad">✗ 찾지 못함</span> <code>${esc(t.tts_dir)}</code>`; }
+    $("#a-tts").innerHTML = t.tts ? `<span class="ok">✓ 준비됨</span> <code>${esc(t.tts_dir)}</code>` : `<span class="bad">✗ 모델이 없어요 — 「모델 받기」</span> <code>${esc(t.tts_dir)}</code>`; }
 }
 
 // ── 실행 · 로그 ──
@@ -472,7 +472,7 @@ const SFIELDS = [
   ["claude", "effort", "생각 깊이 (low·medium·high)", "text"], ["claude", "see_images", "모션 때 그림을 직접 보기", "bool"], ["claude", "fix_rounds", "모션 점검 후 고치기 횟수", "num"],
   ["shorts", "target_seconds", "목표 길이(초)", "num"], ["shorts", "lines_min", "문장 수 최소", "num"], ["shorts", "lines_max", "문장 수 최대", "num"],
   ["shorts", "images_min", "그림 수 최소", "num"], ["shorts", "images_max", "그림 수 최대", "num"], ["shorts", "style", "기본 스타일", "style"],
-  ["tts", "bridge_dir", "SuperTonic3(영상공방) 폴더", "text"], ["tts", "voice", "기본 목소리", "voice"], ["tts", "speed", "기본 말 빠르기", "num"],
+  ["tts", "voice", "기본 목소리", "voice"], ["tts", "speed", "기본 말 빠르기", "num"],
   ["youtube", "native_schedule", "예약은 YouTube 예약 공개로(PC 꺼져도 됨)", "bool"], ["youtube", "visibility", "기본 공개 범위 (public·unlisted·private)", "text"], ["youtube", "slots", "자동 예약 시각(쉼표)", "list"],
 ];
 async function viewGoal() {
@@ -482,7 +482,7 @@ async function viewGoal() {
       : t === "style" ? `<select id="${id}" style="max-width:300px">${g.styles.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select>`
       : t === "voice" ? `<select id="${id}" style="max-width:120px">${g.voices.map(x => `<option ${x === v ? "selected" : ""}>${x}</option>`).join("")}</select>`
       : `<input id="${id}" value="${esc(t === "list" ? (v || []).join(", ") : v ?? "")}" ${t === "num" ? 'type="number" step="any" style="max-width:120px"' : 'style="max-width:520px"'}>`;
-    return `<label>${lab}</label>${inp}` }).join("") + `<label></label><span class="mini">SuperTonic3: ${g.tts_ok ? '<span class="ok">✓ 확인</span>' : '<span class="bad">✗ 못 찾음</span>'} <code>${esc(g.tts_dir)}</code> · 빈칸이면 기본 위치</span>`;
+    return `<label>${lab}</label>${inp}` }).join("") + `<label></label><span class="mini">SuperTonic3: ${g.tts_ok ? '<span class="ok">✓ 확인</span>' : '<span class="bad">✗ 못 찾음</span>'} <code>${esc(g.tts_dir)}</code></span>`;
   if (S.job) { const m = await api(`/api/jobs/${S.job}/meta`); $("#g-job").textContent = `— jobs/${S.job}/job.json`;
     $("#g-title").value = m.title || ""; $("#g-style").value = m.shorts?.style || ""; $("#g-voice").value = m.tts?.voice || ""; $("#g-speed").value = m.tts?.speed ?? "" }
 }
@@ -525,7 +525,7 @@ $("#acc-add").onclick = async () => { await api("/api/accounts", {method: "POST"
 $("#a-panel").onclick = async () => { await api("/api/panel", {method: "POST"}); const a = S.state.current; if (a) api(`/api/accounts/${a}/login`, {method: "POST"}).catch(() => {}) };
 $("#a-claude-btn").onclick = () => { const again = $("#a-claude-btn").textContent !== "Claude 로그인";
   if (again && !confirm("다른 Claude 계정으로 바꿀까요? 브라우저에서 새로 로그인하게 됩니다.")) return; setLogH(Math.max($("#logbox").offsetHeight, 260)); run(["claude-login"]) };
-$("#a-tts-set").onclick = () => tab("goal");
+$("#a-tts-set").onclick = () => run(["tts-setup"]);
 $("#a-doc").onclick = () => run(["doctor"]); $("#a-assets").onclick = () => run(["assets"]);
 $("#a-probe").onclick = () => S.state.current ? run(["probe", "--account", S.state.current]) : alert("YouTube 계정을 먼저 추가하세요");
 $("#a-del").onclick = async () => { if (!S.job || !confirm(`「${S.job}」 작업을 지웁니다. 복사본·대본·음성·그림·모션·영상·기록이 모두 사라집니다(원본 원고 폴더는 그대로).`)) return;

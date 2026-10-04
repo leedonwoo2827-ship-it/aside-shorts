@@ -176,7 +176,7 @@ async function checkTools() {
   const t = await api("/api/tools").catch(() => null); if (!t) return;
   $("#cldot").className = "dot " + (t.claude && t.tts ? "on" : "off");
   $("#cldot").className = "dot " + (t.tts ? "on" : "off");
-  $("#cltxt").textContent = t.tts ? "목소리 SuperTonic3 ✓" : "SuperTonic3 없음 — " + t.tts_dir;
+  $("#cltxt").textContent = t.tts ? "목소리 SuperTonic3 ✓" : "SuperTonic3 모델 없음 — setup.bat 다시";
 }
 async function checkLogin() {
   const a = $("#acc").value; const d = $("#acdot");

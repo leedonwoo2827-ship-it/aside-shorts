@@ -6,7 +6,7 @@ cd /d "%~dp0"
 chcp 65001 >nul
 set PYTHONUTF8=1
 
-echo [1/5] Python venv (.venv)
+echo [1/6] Python venv (.venv)
 set "PYEXE=python"
 where py >nul 2>nul && set "PYEXE=py -3"
 if not exist ".venv\Scripts\python.exe" (
@@ -19,19 +19,23 @@ if errorlevel 1 (
   goto :fail
 )
 
-echo [2/5] Python packages
+echo [2/6] Python packages
 ".venv\Scripts\python" -m pip install -q --upgrade pip
 ".venv\Scripts\python" -m pip install -q -r requirements.txt
 if errorlevel 1 goto :fail
 
-echo [3/5] Playwright Chromium (motion rendering)
+echo [3/6] Playwright Chromium (motion rendering)
 ".venv\Scripts\python" -m playwright install chromium
 if errorlevel 1 goto :fail
 
-echo [4/5] Fonts and GSAP
+echo [4/6] Fonts and GSAP
 ".venv\Scripts\python" -m aside_shorts assets
 
-echo [5/5] Doctor (Claude, SuperTonic3, ffmpeg, Chrome)
+echo [5/6] SuperTonic3 voice model (HuggingFace, about 380MB, first time only)
+".venv\Scripts\python" -m aside_shorts tts-setup
+if errorlevel 1 goto :fail
+
+echo [6/6] Doctor (Claude, SuperTonic3, ffmpeg, Chrome)
 where claude >nul 2>nul
 if errorlevel 1 echo WARNING: claude CLI not found. Install: npm i -g @anthropic-ai/claude-code , then run: claude auth login
 where ffmpeg >nul 2>nul

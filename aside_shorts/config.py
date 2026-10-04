@@ -22,8 +22,8 @@ DEFAULTS: Dict[str, Any] = {
                "timeout_sec": 900, "retries": 1, "see_images": True, "fix_rounds": 2},
     "shorts": {"target_seconds": 35, "lines_min": 6, "lines_max": 8, "images_min": 6, "images_max": 8,
                "style": "vox-retro"},
-    # SuperTonic3(VoiceWright) 만 쓴다 — 다른 엔진으로 넘어가지 않는다
-    "tts": {"bridge_dir": "", "voice": "F4", "speed": 1.1, "gap": 0.25, "lead": 0.4, "tail": 0.9,
+    # SuperTonic3 만 쓴다(내장 — assets/supertonic) — 다른 엔진으로 넘어가지 않는다
+    "tts": {"voice": "F4", "speed": 1.1, "gap": 0.25, "lead": 0.4, "tail": 0.9,
             "timeout_sec": 900},
     "image": {"workers": 2},
     "render": {"w": 1080, "h": 1920, "fps": 30, "crf": 18, "preset": "medium", "jpeg_quality": 92},

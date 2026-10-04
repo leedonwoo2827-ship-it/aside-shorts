@@ -15,6 +15,7 @@
 기타
   ui        패널 서버 + 오른쪽 도킹 창
   assets    글꼴(Pretendard·Black Han Sans·Nanum Pen Script)·GSAP 받기
+  tts-setup SuperTonic3 모델·목소리 받기(HuggingFace, 약 380MB — setup.bat 이 부른다)
   doctor    Claude·SuperTonic3·ffmpeg·Chrome 점검
   claude-login   Claude 구독 로그인(OAuth)
 """
@@ -122,8 +123,8 @@ def cmd_doctor(_a=None) -> int:
         detail(f"doctor claude: {msg}")
         bad += 0 if ok else 1
     from . import tts
-    log(f"✓ SuperTonic3 확인 ({tts.bridge_dir()})" if tts.available()
-        else f"✗ SuperTonic3(VoiceWright)를 찾지 못했어요: {tts.bridge_dir()}")
+    log("✓ SuperTonic3 확인 (내장 · assets/supertonic)" if tts.available()
+        else "✗ SuperTonic3 모델이 없어요 — setup.bat 을 다시 실행하거나 run.bat tts-setup")
     bad += 0 if tts.available() else 1
     log("✓ ffmpeg 확인" if shutil.which("ffmpeg") else "✗ ffmpeg 가 없어요 — winget install Gyan.FFmpeg")
     bad += 0 if shutil.which("ffmpeg") else 1
@@ -337,6 +338,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p = sub.add_parser("ui")
     p.add_argument("--no-window", action="store_true")
     sub.add_parser("assets")
+    sub.add_parser("tts-setup")
     sub.add_parser("doctor")
     sub.add_parser("claude-login")
 
@@ -400,6 +402,11 @@ def _dispatch(a, ap) -> int:
         server.serve(window=not a.no_window)
     elif a.cmd == "assets":
         cmd_assets()
+    elif a.cmd == "tts-setup":
+        from .supertonic import engine as st
+        log("SuperTonic3 모델·목소리를 받는 중이에요 (처음 한 번, 약 380MB) …")
+        st.download(log=log)
+        log("✓ SuperTonic3 준비 완료" if not st.missing() else f"✗ 빠진 파일: {', '.join(st.missing())}")
     elif a.cmd == "claude-login":
         return cmd_claude_login()
     elif a.cmd == "doctor":

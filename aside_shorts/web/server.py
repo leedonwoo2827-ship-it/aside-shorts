@@ -27,7 +27,7 @@ from ..log import log
 
 STATIC = Path(__file__).parent / "static"
 ALLOWED = {"make", "s0-rewrite", "s1-script", "s2-tts", "s3-images", "s4-motion", "s5-render", "post", "plan", "queue",
-           "login", "probe", "doctor", "assets", "claude-login"}
+           "login", "probe", "doctor", "assets", "tts-setup", "claude-login"}
 
 app = FastAPI(title="aside-shorts")
 
@@ -41,7 +41,7 @@ def label(args: List[str]) -> str:
     names = {"make": "딸깍 만들기", "s0-rewrite": "안전 개작", "s1-script": "대본 쓰기", "s2-tts": "목소리 입히기",
              "s3-images": "그림 그리기", "s4-motion": "모션 짜기", "s5-render": "영상 굽기",
              "queue": "예약 시간 확인", "plan": "예약 자동 배치", "login": "로그인 창 열기",
-             "probe": "업로드 창 구조 확인", "doctor": "점검", "assets": "글꼴·GSAP 받기",
+             "probe": "업로드 창 구조 확인", "doctor": "점검", "assets": "글꼴·GSAP 받기", "tts-setup": "SuperTonic3 받기",
              "claude-login": "Claude 로그인"}
     return names.get(cmd, cmd)
 
@@ -173,7 +173,7 @@ def claude_status() -> Dict[str, Any]:
 def tools_status() -> Dict[str, Any]:
     """Claude(대본·모션)·SuperTonic3(목소리) — 설치 여부만 빠르게(로그인 확인은 「점검하기」)."""
     from ..llm import claude_cli
-    return {"claude": bool(claude_cli.exe()), "tts": tts.available(), "tts_dir": str(tts.bridge_dir())}
+    return {"claude": bool(claude_cli.exe()), "tts": tts.available(), "tts_dir": str(tts.assets_dir())}
 
 
 @app.get("/api/log")
@@ -265,7 +265,7 @@ def unit_compare(name: str, prefix: str) -> Dict[str, Any]:
 EDITABLE = {   # 화면에서 고칠 수 있는 전체 설정 (section → keys)
     "claude": ["script_model", "image_model", "motion_model", "effort", "see_images", "fix_rounds"],
     "shorts": ["target_seconds", "lines_min", "lines_max", "images_min", "images_max", "style"],
-    "tts": ["bridge_dir", "voice", "speed"],
+    "tts": ["voice", "speed"],
     "youtube": ["native_schedule", "visibility", "slots"],
 }
 LOCAL_CFG = config.ROOT / "aside.config.local.json"
@@ -276,7 +276,7 @@ def get_settings() -> Dict[str, Any]:
     cfg = config.load()
     return {"values": {sec: {k: cfg[sec].get(k) for k in keys} for sec, keys in EDITABLE.items()},
             "local": config.read_json(LOCAL_CFG, {}) or {}, "styles": styles.names(), "voices": tts.VOICES,
-            "tts_dir": str(tts.bridge_dir()), "tts_ok": tts.available()}
+            "tts_dir": str(tts.assets_dir()), "tts_ok": tts.available()}
 
 
 class Settings(BaseModel):
@@ -304,7 +304,7 @@ def put_settings(body: Settings) -> Dict[str, Any]:
                 cur.setdefault(sec, {})[k] = v
     cur = {k: v for k, v in cur.items() if v}
     config.write_json(LOCAL_CFG, cur)
-    return {"ok": True, "tts_ok": tts.available(), "tts_dir": str(tts.bridge_dir())}
+    return {"ok": True, "tts_ok": tts.available(), "tts_dir": str(tts.assets_dir())}
 
 
 @app.get("/api/jobs/{name}/meta")
