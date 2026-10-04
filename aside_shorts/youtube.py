@@ -31,7 +31,11 @@ UPLOAD = "https://www.youtube.com/upload"
 # ── 셀렉터 — 화면이 바뀌면 여기만 고친다 ───────────────────────────────────
 SEL: Dict[str, Any] = {
     "dialog": "ytcp-uploads-dialog",
-    "file": 'ytcp-uploads-file-picker input[type="file"], input[type="file"]',
+    # ★ 2026-10-05 실측: Chrome 을 새로 띄운 직후엔 업로드 창이 다 뜨기 전에 페이지의 다른 file 칸에 넣어 버려
+    #   「파일 선택」 화면 그대로 멈췄다 → 업로드 창 안의 칸만 쓰고, 들어갔는지(제목 칸이 뜨는지) 확인한다.
+    "picker": "ytcp-uploads-file-picker",
+    "file": 'ytcp-uploads-file-picker input[type="file"]',
+    "select_btn": "#select-files-button",
     "title": "#title-textarea #textbox",
     "desc": "#description-textarea #textbox",
     "not_kids": 'tp-yt-paper-radiobutton[name="VIDEO_MADE_FOR_KIDS_NOT_MFK"]',
@@ -444,6 +448,37 @@ def _click(page, css: str, text=None, *, role: str = "radio", timeout: int = 20_
     raise PostError(f"화면에서 버튼을 찾지 못했어요 ({text.pattern if text is not None else css}): {str(last)[:120]}")
 
 
+def _attach_video(s: Session, video: Path) -> bool:
+    """업로드 창의 「파일 선택」 영역이 뜬 뒤 그 안의 칸에 넣고, 제목 칸이 뜨는지로 들어갔는지 확인한다.
+    안 들어가면 「파일 선택」 버튼을 눌러 파일 선택 창으로 한 번 더. 파일이 안 들어갔으면 초안도 안 생긴다."""
+    page = s.page
+    try:
+        page.locator(SEL["picker"]).first.wait_for(state="visible", timeout=60_000)
+    except Exception as e:      # noqa: BLE001
+        detail(f"  업로드 창(파일 선택)이 안 뜸: {e}")
+        return False
+    time.sleep(1.5)
+    for attempt in (1, 2):
+        try:
+            if attempt == 1:
+                page.locator(SEL["file"]).first.set_input_files(str(video))
+            else:
+                with page.expect_file_chooser(timeout=15_000) as fc:
+                    btn = page.locator(SEL["select_btn"])
+                    (btn.first if btn.count() else page.get_by_text(re.compile(r"^(파일 선택|Select files)$")).first).click()
+                fc.value.set_files(str(video))
+        except Exception as e:      # noqa: BLE001
+            detail(f"  파일 넣기 {attempt}차 실패: {e}")
+            continue
+        try:
+            page.locator(SEL["title"]).first.wait_for(state="visible", timeout=45_000)
+            return True
+        except Exception:
+            detail(f"  파일 넣기 {attempt}차: 제목 칸이 안 뜸")
+            s.shot(f"attach{attempt}")
+    return False
+
+
 TEXT_MORE = re.compile(r"^(자세히 보기|Show more|더보기)$")
 TEXT_PIN = re.compile(r"^(고정|Pin)$")
 
@@ -537,10 +572,10 @@ def upload(acc: Dict[str, Any], short: Dict[str, Any], video: Path, *, when: Opt
         if "accounts.google." in page.url or not s.logged_in():
             s.shot("not-logged-in")
             raise PostError("로그인이 안 되어 있습니다 — 패널의 「로그인」으로 이 계정 Chrome 에서 로그인하세요")
-        inp = page.locator(SEL["file"]).first
-        inp.wait_for(state="attached", timeout=60_000)
         log("  ② 영상 파일을 넣는 중")
-        inp.set_input_files(str(video))
+        if not _attach_video(s, video):
+            s.shot("not-attached")
+            raise PostError("영상 파일이 업로드 창에 들어가지 않았어요 — Studio 에 초안은 생기지 않았어요. 같은 버튼을 다시 눌러 주세요.")
         try:
             log("  ③ 제목·설명을 쓰는 중")
             _fill(page, SEL["title"], title)

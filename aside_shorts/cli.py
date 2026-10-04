@@ -320,15 +320,23 @@ def cmd_plan(a) -> None:
     start = schedule.parse_when(a.start + " 00:00") if a.start else None
     slots = schedule.next_slots(len(left), acc["name"], start=start, pat=a.pattern)
     native = bool(config.load()["youtube"].get("native_schedule"))
+    fails: List[str] = []
     for sid, when in zip(left, slots):
         log(f"  {when:%m-%d(%a) %H:%M}  {sid}  {(job.short(sid) or {}).get('perspective', '')}")
         if a.apply:
-            if native:
-                cmd_post(argparse.Namespace(job=job.name, only=sid, account=acc["name"], at=when.strftime(schedule.FMT),
-                                            visibility=None, queue=False, dry_run=False, force=False))
+            if native:          # 한 편이 실패해도 다음 편은 계속 — 끝에 실패 목록
+                _guard(f"{sid} 예약 업로드", lambda sid=sid, when=when: cmd_post(argparse.Namespace(
+                    job=job.name, only=sid, account=acc["name"], at=when.strftime(schedule.FMT),
+                    visibility=None, queue=False, dry_run=False, force=False)), fails)
             else:
                 schedule.enqueue(job, sid, when, acc["name"])
-    log(("예약했습니다" if a.apply else "미리보기입니다 — 적용하려면 --apply") + f" ({len(left)}건, 계정 {acc['name']})")
+    if not a.apply:
+        log(f"미리보기입니다 — 적용하려면 --apply ({len(left)}건, 계정 {acc['name']})")
+    elif fails:
+        log(f"예약 {len(left) - len(fails)}건 완료 · 실패 {len(fails)}건: {', '.join(fails)} — 예약 탭에서 다시 누르면 남은 것만 해요")
+        raise SystemExit(1)
+    else:
+        log(f"예약했습니다 ({len(left)}건, 계정 {acc['name']})")
 
 
 def cmd_queue(_a=None) -> None:
