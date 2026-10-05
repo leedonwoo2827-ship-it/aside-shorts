@@ -86,7 +86,7 @@ def _key(job: Job, sid: str) -> str:
     for p in _inputs(job, sid):
         h.update(p.name.encode())
         h.update(hashlib.sha1(p.read_bytes()).digest())
-    return "c" + h.hexdigest()[:12]
+    return "v2:" + h.hexdigest()[:12]     # 예전 기록(16진수 12자리)과 절대 안 겹치는 표시
 
 
 def render(job: Job, sid: str) -> Path:
@@ -149,7 +149,7 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
         key = _key(job, sid)
         old = (config.read_json(meta_p, {}) or {}).get("key", "")
         vid = job.video(sid)
-        if vid.exists() and not force and old and not old.startswith("c"):
+        if vid.exists() and not force and old and not old.startswith("v2:"):
             # 예전(날짜 기준) 기록으로 구운 영상 — 재료가 영상보다 나중에 '내용이' 바뀐 게 아니면 그대로 쓴다.
             # 페이지(index.html)는 다시 쓰여도 날짜만 바뀔 뿐이라, 장면 조각(scene.*)·음성·그림 날짜로 판단한다.
             src = [p for p in [job.sub("motion", sid) / "scene.html", job.sub("motion", sid) / "scene.js",
