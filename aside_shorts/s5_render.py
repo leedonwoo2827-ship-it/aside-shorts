@@ -74,15 +74,19 @@ def check(page_path: Path, duration: float) -> List[str]:
     return probs[:12]
 
 
+def _inputs(job: Job, sid: str) -> list:
+    return [p for p in [job.sub("motion", sid) / "index.html", job.sub("audio", sid) / "narration.wav",
+                        *sorted(job.sub("images", sid).glob("*.png"))] if p.exists()]
+
+
 def _key(job: Job, sid: str) -> str:
+    """영상의 재료가 그대로인가 — **파일 내용**으로 본다(날짜 X).
+    ★ 2026-10-06 실측: 이어서 시작하면 s4 가 페이지를 다시 써서 날짜가 바뀌고, 다 된 영상을 전부 또 구웠다."""
     h = hashlib.sha1()
-    for p in [job.sub("motion", sid) / "index.html", job.sub("audio", sid) / "narration.wav",
-              *sorted(job.sub("images", sid).glob("*.png"))]:
-        if p.exists():
-            h.update(p.name.encode())
-            h.update(str(p.stat().st_size).encode())
-            h.update(str(int(p.stat().st_mtime)).encode())
-    return h.hexdigest()[:12]
+    for p in _inputs(job, sid):
+        h.update(p.name.encode())
+        h.update(hashlib.sha1(p.read_bytes()).digest())
+    return "c" + h.hexdigest()[:12]
 
 
 def render(job: Job, sid: str) -> Path:
@@ -143,7 +147,17 @@ def run(job: Job, only=None, force: bool = False, **_) -> None:
             continue
         meta_p = job.sub("out", sid) / "render.json"
         key = _key(job, sid)
-        if job.video(sid).exists() and (config.read_json(meta_p, {}) or {}).get("key") == key and not force:
+        old = (config.read_json(meta_p, {}) or {}).get("key", "")
+        vid = job.video(sid)
+        if vid.exists() and not force and old and not old.startswith("c"):
+            # 예전(날짜 기준) 기록으로 구운 영상 — 재료가 영상보다 나중에 '내용이' 바뀐 게 아니면 그대로 쓴다.
+            # 페이지(index.html)는 다시 쓰여도 날짜만 바뀔 뿐이라, 장면 조각(scene.*)·음성·그림 날짜로 판단한다.
+            src = [p for p in [job.sub("motion", sid) / "scene.html", job.sub("motion", sid) / "scene.js",
+                               job.sub("audio", sid) / "narration.wav", *job.sub("images", sid).glob("*.png")] if p.exists()]
+            if all(p.stat().st_mtime <= vid.stat().st_mtime + 2 for p in src):
+                config.write_json(meta_p, {"key": key, "at": time.strftime("%Y-%m-%d %H:%M:%S"), "adopted": True})
+                old = key
+        if vid.exists() and old == key and not force:
             detail(f"s5: {sid} 그대로 — 건너뜀")
             continue
         log(f"  {sid} 영상으로 굽는 중이에요 (1~3분) …")

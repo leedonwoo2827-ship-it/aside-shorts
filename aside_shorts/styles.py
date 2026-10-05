@@ -99,5 +99,6 @@ def build_page(job, sid: str, scene_html: str, scene_js: str) -> Path:
     page = page.replace("</body>", f'<audio id="__audio" src="../audio/narration.wav" preload="auto"></audio>\n'
                                    '<script>if(!navigator.webdriver){document.addEventListener("click",function(){window.__play()});}</script>\n</body>')
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(page, encoding="utf-8")
+    if not (out.exists() and out.read_text(encoding="utf-8") == page):    # 같으면 다시 쓰지 않는다(영상 캐시가 안 깨지게)
+        out.write_text(page, encoding="utf-8")
     return out
