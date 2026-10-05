@@ -22,6 +22,7 @@ from typing import List, Optional
 EXTS = (".docx", ".txt", ".md")
 RAW, REWRITE, SCRIPT, BUNDLE = "01_raw", "02_rewrite", "03_script", "04_bundle"
 _NAME = re.compile(r"^\s*(\d+)\s*장[_\s]*(.*?)\s*-\s*(\d+)\s*절[_\s]*(.*)$")
+_NAME2 = re.compile(r"^\s*(\d+)\s+(.+?)\s*-\s*(\d+)\s*(.*)$")       # 「2 장제목-1 절제목」
 _UNIT = re.compile(r"^(\d+)-(\d+)_(.*)$")
 
 
@@ -43,8 +44,13 @@ def read_text(path: Path) -> str:
 
 
 def parse_name(stem: str) -> Optional[tuple]:
-    """'1장_통합적 관점-2절_통합적 관점의 필요성과 적용' → ('1-2', '1장 통합적 관점', '2절 통합적 관점의 필요성과 적용')"""
-    m = _NAME.match(stem)
+    """'1장_통합적 관점-2절_통합적 관점의 필요성과 적용' → ('1-2', '1장 통합적 관점', '2절 통합적 관점의 필요성과 적용')
+
+    「장」「절」 글자가 없는 꼴도 읽는다(2026-10-05 실제 원고 이름):
+      '2 인간,사회,환경과행복-1 행복의 기준과 의미'  → 2장 1절
+      '4 문화의 다양성 - 2 문화 변동의 양상'          → 4장 2절
+      '3 자연환경과 인간-4환경 문제의 발생과 …'       → 3장 4절"""
+    m = _NAME.match(stem) or _NAME2.match(stem)
     if not m:
         return None
     ch, ch_t, sec, sec_t = m.groups()
